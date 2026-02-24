@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradientTrade — Trade</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="trade.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+      <path d="M20 4 L36 14 L36 26 L20 36 L4 26 L4 14 Z" stroke="rgba(127,206,206,0.9)" stroke-width="2" fill="none"/>
+      <path d="M20 4 L20 36 M4 14 L36 26 M4 26 L36 14" stroke="rgba(127,206,206,0.4)" stroke-width="1.5"/>
+      <circle cx="20" cy="20" r="4" fill="rgba(127,206,206,0.9)"/>
+    </svg>
+    GradientTrade
+  </div>
+  <nav class="sidebar-nav">
+    <a href="dashboard.html"   class="nav-item"><span class="nav-icon"></span> Dashboard</a>
+    <a href="trade.html"       class="nav-item active"><span class="nav-icon"></span> Trade</a>
+    <a href="leaderboard.html" class="nav-item"><span class="nav-icon"></span> Leaderboard</a>
+    <a href="portfolio.html"   class="nav-item"><span class="nav-icon"></span> Portfolio</a>
+    <a href="settings.html"    class="nav-item"><span class="nav-icon"></span> Settings</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">??</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-balance">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="topbar"><h2>Trade</h2></div>
+
+  <!-- Coin Selector Pills -->
+  <div class="coin-selector">
+    <div class="coin-pill active" data-coin="bitcoin">
+      <div class="pill-icon" style="background:linear-gradient(135deg,#f7931a,#ffb347);">&#x20BF;</div>
+      Bitcoin <span class="pill-change" id="pill-btc">—</span>
+    </div>
+    <div class="coin-pill" data-coin="ethereum">
+      <div class="pill-icon" style="background:linear-gradient(135deg,#627eea,#a8b8f8);">&#926;</div>
+      Ethereum <span class="pill-change" id="pill-eth">—</span>
+    </div>
+    <div class="coin-pill" data-coin="solana">
+      <div class="pill-icon" style="background:linear-gradient(135deg,#9945ff,#14f195);">&#9676;</div>
+      Solana <span class="pill-change" id="pill-sol">—</span>
+    </div>
+    <div class="coin-pill" data-coin="avalanche-2">
+      <div class="pill-icon" style="background:linear-gradient(135deg,#e84142,#ff7b7b);">A</div>
+      Avalanche <span class="pill-change" id="pill-avax">—</span>
+    </div>
+  </div>
+
+  <!-- Trade Grid -->
+  <div class="trade-grid">
+
+    <!-- Chart + Signal -->
+    <div class="card">
+      <div class="chart-header">
+        <div class="chart-coin-info">
+          <h3 id="chart-title">Bitcoin (BTC)</h3>
+          <p id="chart-sub">BTC / USD &bull; 1H</p>
+        </div>
+        <div class="chart-price-block">
+          <div class="big-price" id="chart-price">—</div>
+          <div class="price-change" id="chart-change">—</div>
+        </div>
+      </div>
+
+      <div class="time-filters">
+        <button class="tf active">1H</button>
+        <button class="tf">4H</button>
+        <button class="tf">24H</button>
+        <button class="tf">7D</button>
+      </div>
+
+      <div class="chart-wrap">
+        <canvas id="tradeChart"></canvas>
+      </div>
+
+      <div class="inline-signal buy" id="ai-signal">
+        <div class="signal-left">
+          <div class="signal-icon">🤖</div>
+          <div>
+            <div class="signal-label">OpenGradient AI Signal</div>
+            <div class="signal-action" id="signal-action">Strong Buy</div>
+          </div>
+        </div>
+        <div class="signal-right">
+          <div class="signal-conf-label">Confidence</div>
+          <div class="conf-track">
+            <div class="conf-fill" id="conf-fill" style="width:84%"></div>
+          </div>
+          <div class="conf-pct" id="conf-pct">84%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trade Form -->
+    <div class="card trade-form-card">
+      <div class="form-title">Place Order</div>
+
+      <div class="balance-row">
+        <span class="balance-label">Available Balance</span>
+        <span class="balance-val" id="form-balance">—</span>
+      </div>
+
+      <div class="bs-toggle">
+        <button class="bs-btn buy active" id="buy-btn">Buy</button>
+        <button class="bs-btn sell" id="sell-btn">Sell</button>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label" id="top-input-label">Amount (USD)</div>
+        <div class="input-wrap">
+          <input type="number" id="usd-input" placeholder="0.00" oninput="calcCoin()"/>
+          <span class="input-currency" id="top-currency">USD</span>
+          <button class="max-btn" onclick="setMax()">MAX</button>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label" id="bottom-input-label">You receive</div>
+        <div class="input-wrap">
+          <input type="number" id="coin-input" placeholder="0.00000" oninput="calcUSD()"/>
+          <span class="input-currency" id="coin-label">BTC</span>
+        </div>
+      </div>
+
+      <div class="order-summary">
+        <div class="summary-row">
+          <span>Coin Price</span>
+          <span id="summary-price">—</span>
+        </div>
+        <div class="summary-row">
+          <span>Platform Fee</span>
+          <span>$0.00</span>
+        </div>
+        <div class="summary-divider"></div>
+        <div class="summary-row summary-total">
+          <span id="total-label">Total Cost</span>
+          <span id="summary-total">&mdash;</span>
+        </div>
+      </div>
+
+      <button class="trade-submit" id="submit-btn" onclick="handleTrade()">Buy Bitcoin</button>
+    </div>
+  </div>
+
+  <!-- Trade History -->
+  <div class="section-title">Recent Trade History</div>
+  <div class="history-table">
+    <div class="table-head">
+      <span>Asset</span><span>Type</span><span>Amount</span><span>Price</span><span>P&amp;L</span><span>Status</span>
+    </div>
+    <div id="trade-history-body">
+      <div style="padding:20px;opacity:0.5;text-align:center;">Loading...</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- AUTH MODULE -->
+<script type="module">
+  import { requireAuth, loadSidebar, placeTrade, getUserTrades } from './firebase.js';
+  import { getAISignal } from './opengradient.js';
+  window._getAISignal = getAISignal;
+
+  // ── Compute holdings: net coin amount per coin from trade history ──
+  function computeHoldings(trades) {
+    const holdings = {}; // { coinId: { coinAmount, avgBuyPrice, totalInvested } }
+    trades.forEach(t => {
+      if (!holdings[t.coin]) holdings[t.coin] = { coinAmount: 0, totalInvested: 0, totalCoins: 0 };
+      if (t.type === 'buy') {
+        holdings[t.coin].coinAmount    += t.coinAmount;
+        holdings[t.coin].totalCoins    += t.coinAmount;
+        holdings[t.coin].totalInvested += t.amountUSD;
+      } else if (t.type === 'sell') {
+        holdings[t.coin].coinAmount    -= t.coinAmount;
+        holdings[t.coin].totalInvested -= t.amountUSD;
+      }
+    });
+    // Remove coins with zero or negative holdings (fully sold)
+    Object.keys(holdings).forEach(k => {
+      if (holdings[k].coinAmount <= 0.000001) delete holdings[k];
+    });
+    return holdings;
+  }
+
+  requireAuth(async (user, userData) => {
+    loadSidebar(user, userData);
+
+    window._currentUser = user;
+    window._userData    = userData;
+    window._userBalance = userData.balance ?? 10000;
+    window._holdings    = {}; // populated after trades load
+
+    // Update balance in form
+    document.getElementById('form-balance').textContent =
+      '$' + Number(window._userBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Wire up trade execution
+    window._executeTrade = async function(tradeData) {
+      const result = await placeTrade(user?.uid || null, tradeData);
+      window._userBalance = result.balance;
+      const balEl = document.querySelector('.user-balance');
+      if (balEl) balEl.textContent = '$' + Number(result.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
+      document.getElementById('form-balance').textContent =
+        '$' + Number(result.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      localStorage.setItem('gt_balance', result.balance);
+      return result;
+    };
+
+    // Load trades + compute holdings
+    const trades = await getUserTrades(user?.uid || null);
+    window._holdings = computeHoldings(trades);
+
+    // Notify the non-module script that holdings are ready
+    window._holdingsReady = true;
+    if (window._onHoldingsReady) window._onHoldingsReady();
+
+    // Render trade history
+    const coinIcons = { Bitcoin: '₿', Ethereum: 'Ξ', Solana: '◎', Avalanche: 'A' };
+    const coinBgs   = { Bitcoin: '#f7931a,#ffb347', Ethereum: '#627eea,#a8b8f8', Solana: '#9945ff,#14f195', Avalanche: '#e84142,#ff7b7b' };
+    const body = document.getElementById('trade-history-body');
+
+    if (!trades.length) {
+      body.innerHTML = '<div style="padding:20px;opacity:0.5;text-align:center;">No trades yet — place your first order above!</div>';
+    } else {
+      body.innerHTML = trades.slice(0, 8).map(t => {
+        const icon = coinIcons[t.coinName] || '?';
+        const bg   = coinBgs[t.coinName]   || '#3A9AAA,#163d30';
+        const pnl  = (t.pnl >= 0 ? '+$' : '-$') + Math.abs(t.pnl ?? 0).toFixed(2);
+        return `
+          <div class="table-row">
+            <div class="row-asset"><div class="mini-icon" style="background:linear-gradient(135deg,${bg});">${icon}</div>${t.coinName}</div>
+            <span><span class="badge ${t.type}">${t.type.toUpperCase()}</span></span>
+            <span>$${Number(t.amountUSD).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+            <span>$${Number(t.priceAtTrade).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+            <span class="${(t.pnl ?? 0) >= 0 ? 'up' : 'down'}">${pnl}</span>
+            <span><span class="status-dot">Filled</span></span>
+          </div>`;
+      }).join('');
+    }
+  });
+</script>
+
+<!-- CHART + TRADE LOGIC (non-module so functions are global) -->
+<script>
+  const coinConfig = {
+    'bitcoin':     { symbol: 'BTC',  name: 'Bitcoin',   signal: 'Strong Buy', conf: 84, signalType: 'buy'  },
+    'ethereum':    { symbol: 'ETH',  name: 'Ethereum',  signal: 'Buy',        conf: 71, signalType: 'buy'  },
+    'solana':      { symbol: 'SOL',  name: 'Solana',    signal: 'Sell',       conf: 68, signalType: 'sell' },
+    'avalanche-2': { symbol: 'AVAX', name: 'Avalanche', signal: 'Strong Buy', conf: 79, signalType: 'buy'  },
+  };
+
+  const timeframes = {
+    '1H':  { days: 0.04167, format: d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    '4H':  { days: 0.1667,  format: d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    '24H': { days: 1,       format: d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    '7D':  { days: 7,       format: d => {
+      const weekday = d.toLocaleDateString([], { weekday: 'short' });
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      return weekday + ', ' + day + '/' + month;
+    }},
+  };
+
+  let activeCoinId = 'bitcoin';
+  let activeTimeframe = '1H';
+  let isBuy = true;
+  let liveData = {};
+
+  const ctx = document.getElementById('tradeChart').getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 240);
+  gradient.addColorStop(0, 'rgba(91,184,196,0.35)');
+  gradient.addColorStop(1, 'rgba(91,184,196,0)');
+
+  const chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: [], datasets: [{ data: [], borderColor: '#3A9AAA', borderWidth: 2.5, backgroundColor: gradient, fill: true, tension: 0.45, pointRadius: 4, pointBackgroundColor: '#3A9AAA', pointBorderColor: 'white', pointBorderWidth: 2, pointHoverRadius: 6 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(13,46,46,0.9)', titleColor: 'rgba(255,255,255,0.6)', bodyColor: 'white', bodyFont: { weight: '700', size: 14 }, padding: 12, cornerRadius: 10, callbacks: { label: c => '$' + c.parsed.y.toLocaleString() } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: 'rgba(15,44,44,0.5)', font: { size: 11 }, maxTicksLimit: 7 } },
+        y: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: 'rgba(15,44,44,0.5)', font: { size: 11 }, callback: v => '$' + v.toLocaleString() } }
+      }
+    }
+  });
+
+  async function fetchChartData(coinId, timeframe) {
+    const tf = timeframes[timeframe];
+    try {
+      const res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.coingecko.com/api/v3/coins/' + coinId + '/market_chart?vs_currency=usd&days=' + tf.days));
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      const prices = data.prices;
+      const step = Math.max(1, Math.floor(prices.length / 30));
+      const reduced = prices.filter((_, i) => i % step === 0);
+      return { labels: reduced.map(p => tf.format(new Date(p[0]))), values: reduced.map(p => p[1]) };
+    } catch (err) { return null; }
+  }
+
+  async function updateChart(coinId, timeframe) {
+    window._signalFetched = false;
+    const c = coinConfig[coinId];
+    document.getElementById('chart-title').textContent = c.name + ' (' + c.symbol + ')';
+    document.getElementById('chart-sub').textContent   = c.symbol + ' / USD - ' + timeframe + ' (loading...)';
+    const result = await fetchChartData(coinId, timeframe);
+    if (result) { chart.data.labels = result.labels; chart.data.datasets[0].data = result.values; chart.update(); }
+    document.getElementById('chart-sub').textContent = c.symbol + ' / USD - ' + timeframe;
+    if (liveData[coinId]) {
+      const price = liveData[coinId].usd;
+      const change = liveData[coinId].usd_24h_change;
+      document.getElementById('chart-price').textContent   = formatPrice(price);
+      document.getElementById('summary-price').textContent = formatPrice(price);
+      const changeEl = document.getElementById('chart-change');
+      changeEl.textContent = (change >= 0 ? '▲ +' : '▼ ') + change.toFixed(2) + '% today';
+      changeEl.className   = 'price-change ' + (change >= 0 ? 'up' : 'down');
+    }
+    // Show loading state immediately
+    document.getElementById('ai-signal').className       = 'inline-signal hold';
+    document.getElementById('signal-action').textContent  = 'Analyzing...';
+    document.getElementById('conf-fill').style.width      = '0%';
+    document.getElementById('conf-pct').textContent       = '...';
+    updateFormMode();
+
+    // Fetch real AI signal from OpenGradient (only if prices already loaded)
+    if (window._getAISignal && liveData[coinId]) {
+      window._signalFetched = true;
+      var _price  = liveData[coinId].usd;
+      var _change = liveData[coinId].usd_24h_change;
+      window._getAISignal(c.name, c.symbol, _price, _change, timeframe).then(function(signal) {
+        if (signal) {
+          document.getElementById('ai-signal').className       = 'inline-signal ' + signal.signalType;
+          document.getElementById('signal-action').textContent  = signal.signal;
+          document.getElementById('conf-fill').style.width      = signal.confidence + '%';
+          document.getElementById('conf-pct').textContent       = signal.confidence + '%';
+        } else {
+          document.getElementById('ai-signal').className       = 'inline-signal ' + c.signalType;
+          document.getElementById('signal-action').textContent  = c.signal;
+          document.getElementById('conf-fill').style.width      = c.conf + '%';
+          document.getElementById('conf-pct').textContent       = c.conf + '%';
+        }
+        window._signalFetched = false;
+      });
+    }
+  }
+
+  function getHolding() {
+    var h = window._holdings && window._holdings[activeCoinId];
+    return h ? h.coinAmount : 0;
+  }
+
+  function updateFormMode() {
+    const c          = coinConfig[activeCoinId];
+    const price      = liveData[activeCoinId] ? liveData[activeCoinId].usd : 0;
+    const balance    = window._userBalance || parseFloat(localStorage.getItem('gt_balance') || '10000');
+    const holding    = getHolding();
+    const holdingUSD = price ? holding * price : 0;
+    const formBal    = document.getElementById('form-balance');
+
+    if (isBuy) {
+      document.querySelector('.balance-label').textContent       = 'Available Balance';
+      formBal.textContent = '$' + balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      formBal.style.color = '';
+      document.getElementById('top-input-label').textContent    = 'Amount (USD)';
+      document.getElementById('top-currency').textContent       = 'USD';
+      document.getElementById('usd-input').placeholder          = '0.00';
+      document.getElementById('bottom-input-label').textContent = 'You receive';
+      document.getElementById('coin-label').textContent         = c.symbol;
+      document.getElementById('total-label').textContent        = 'Total Cost';
+    } else {
+      document.querySelector('.balance-label').textContent = 'You own';
+      if (holding > 0.000001) {
+        formBal.textContent = holding.toFixed(6) + ' ' + c.symbol +
+          (price ? '  =  $' + holdingUSD.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '');
+        formBal.style.color = '#3A9AAA';
+      } else {
+        formBal.textContent = 'No ' + c.name + ' owned';
+        formBal.style.color = '#a02020';
+      }
+      // Sell mode: top = coin amount, bottom = USD received
+      document.getElementById('top-input-label').textContent    = c.symbol + ' to sell';
+      document.getElementById('top-currency').textContent       = c.symbol;
+      document.getElementById('usd-input').placeholder          = '0.000000';
+      document.getElementById('bottom-input-label').textContent = 'You receive (USD)';
+      document.getElementById('coin-label').textContent         = 'USD';
+      document.getElementById('total-label').textContent        = 'You receive (USD)';
+    }
+    updateSubmitBtn();
+    document.getElementById('usd-input').value  = '';
+    document.getElementById('coin-input').value = '';
+    document.getElementById('summary-total').textContent = '--';
+  }
+
+  document.querySelectorAll('.coin-pill').forEach(function(pill) {
+    pill.addEventListener('click', function() {
+      document.querySelectorAll('.coin-pill').forEach(function(p) { p.classList.remove('active'); });
+      pill.classList.add('active');
+      activeCoinId = pill.dataset.coin;
+      updateChart(activeCoinId, activeTimeframe);
+    });
+  });
+
+  document.querySelectorAll('.tf').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.tf').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      activeTimeframe = btn.textContent.trim();
+      updateChart(activeCoinId, activeTimeframe);
+    });
+  });
+
+  document.getElementById('buy-btn').addEventListener('click', function() {
+    isBuy = true;
+    document.getElementById('buy-btn').classList.add('active');
+    document.getElementById('sell-btn').classList.remove('active');
+    updateFormMode();
+  });
+
+  document.getElementById('sell-btn').addEventListener('click', function() {
+    isBuy = false;
+    document.getElementById('sell-btn').classList.add('active');
+    document.getElementById('buy-btn').classList.remove('active');
+    updateFormMode();
+  });
+
+  function updateSubmitBtn() {
+    var btn = document.getElementById('submit-btn');
+    btn.textContent = (isBuy ? 'Buy ' : 'Sell ') + coinConfig[activeCoinId].name;
+    btn.className   = 'trade-submit' + (isBuy ? '' : ' sell-mode');
+  }
+
+  function formatPrice(price) {
+    if (price >= 1000) return '$' + price.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    if (price >= 1)    return '$' + price.toFixed(2);
+    return '$' + price.toFixed(4);
+  }
+
+  function getLivePrice() { return liveData[activeCoinId] ? liveData[activeCoinId].usd : 0; }
+
+  function calcCoin() {
+    var price = getLivePrice();
+    if (!price) { document.getElementById('coin-input').value = ''; document.getElementById('summary-total').textContent = 'Loading price...'; return; }
+    if (isBuy) {
+      // Buy: top=USD entered, bottom=coin received
+      var usd = parseFloat(document.getElementById('usd-input').value) || 0;
+      document.getElementById('coin-input').value = usd ? (usd / price).toFixed(6) : '';
+      document.getElementById('summary-total').textContent = usd ? '$' + usd.toFixed(2) : '--';
+    } else {
+      // Sell: top=coin entered, bottom=USD received
+      var coins = parseFloat(document.getElementById('usd-input').value) || 0;
+      var received = coins * price;
+      document.getElementById('coin-input').value = coins ? received.toFixed(2) : '';
+      document.getElementById('summary-total').textContent = coins ? '$' + received.toFixed(2) : '--';
+    }
+  }
+
+  function calcUSD() {
+    var price = getLivePrice();
+    if (!price) return;
+    if (isBuy) {
+      // Buy: bottom=coin, recalc top=USD
+      var coin = parseFloat(document.getElementById('coin-input').value) || 0;
+      var usd  = coin * price;
+      document.getElementById('usd-input').value = coin ? usd.toFixed(2) : '';
+      document.getElementById('summary-total').textContent = coin ? '$' + usd.toFixed(2) : '--';
+    } else {
+      // Sell: bottom=USD received, recalc top=coin
+      var usd = parseFloat(document.getElementById('coin-input').value) || 0;
+      var coins = price ? usd / price : 0;
+      document.getElementById('usd-input').value = usd ? coins.toFixed(6) : '';
+      document.getElementById('summary-total').textContent = usd ? '$' + usd.toFixed(2) : '--';
+    }
+  }
+
+  function setMax() {
+    var price   = getLivePrice();
+    var holding = getHolding();
+    if (!isBuy) {
+      // Sell mode: MAX = your actual holdings, not cash
+      if (holding > 0.000001 && price) {
+        document.getElementById('usd-input').value  = holding.toFixed(6);
+        document.getElementById('coin-input').value = (holding * price).toFixed(2);
+        document.getElementById('summary-total').textContent = '$' + (holding * price).toFixed(2);
+      } else {
+        // Nothing owned — clear fields and warn
+        document.getElementById('usd-input').value  = '';
+        document.getElementById('coin-input').value = '';
+        document.getElementById('summary-total').textContent = '--';
+        alert('You do not own any ' + coinConfig[activeCoinId].name + '. Buy some first!');
+      }
+    } else {
+      // Buy mode: MAX = available cash balance
+      var balance = window._userBalance || parseFloat(localStorage.getItem('gt_balance') || '10000');
+      document.getElementById('usd-input').value = balance.toFixed(2);
+      calcCoin();
+    }
+  }
+
+  async function handleTrade() {
+    var usdVal = parseFloat(document.getElementById('usd-input').value);
+    if (!usdVal || usdVal <= 0) { alert('Please enter an amount.'); return; }
+    var price = getLivePrice();
+    if (!price) { alert('Price not loaded yet, please wait a moment.'); return; }
+
+    var coinAmt, actualUSD;
+    if (isBuy) {
+      // Buy: usd-input = USD to spend
+      actualUSD = usdVal;
+      coinAmt   = usdVal / price;
+      var balance = window._userBalance || parseFloat(localStorage.getItem('gt_balance') || '10000');
+      if (actualUSD > balance) {
+        alert('Insufficient balance. You only have $' + balance.toFixed(2) + ' available.');
+        return;
+      }
+    } else {
+      // Sell: usd-input = coin amount to sell
+      coinAmt   = usdVal; // usd-input holds coin amount in sell mode
+      actualUSD = coinAmt * price;
+      var holding = getHolding();
+      if (holding <= 0.000001) {
+        alert('You do not own any ' + coinConfig[activeCoinId].name + '. Buy some first!');
+        return;
+      }
+      if (coinAmt > holding + 0.000001) {
+        alert('You can only sell up to ' + holding.toFixed(6) + ' ' + coinConfig[activeCoinId].symbol + '.');
+        return;
+      }
+    }
+
+    var btn = document.getElementById('submit-btn');
+    var original = btn.textContent;
+    btn.textContent = 'Placing order...';
+    btn.style.opacity = '0.7';
+    btn.disabled = true;
+
+    try {
+      if (window._executeTrade) {
+        await window._executeTrade({
+          coin:         activeCoinId,
+          coinName:     coinConfig[activeCoinId].name,
+          symbol:       coinConfig[activeCoinId].symbol,
+          type:         isBuy ? 'buy' : 'sell',
+          amountUSD:    actualUSD,
+          coinAmount:   coinAmt,
+          priceAtTrade: price,
+        });
+        // Update local holdings immediately
+        if (!window._holdings) window._holdings = {};
+        if (!window._holdings[activeCoinId]) window._holdings[activeCoinId] = { coinAmount: 0 };
+        if (isBuy) {
+          window._holdings[activeCoinId].coinAmount += coinAmt;
+        } else {
+          window._holdings[activeCoinId].coinAmount -= coinAmt;
+          if (window._holdings[activeCoinId].coinAmount <= 0.000001) {
+            delete window._holdings[activeCoinId];
+          }
+        }
+      }
+      btn.textContent = 'Order Placed!';
+      setTimeout(function() {
+        btn.textContent   = original;
+        btn.style.opacity = '1';
+        btn.disabled      = false;
+        document.getElementById('usd-input').value  = '';
+        document.getElementById('coin-input').value = '';
+        document.getElementById('summary-total').textContent = '--';
+        updateFormMode();
+        location.reload();
+      }, 1500);
+    } catch(err) {
+      console.error('Trade failed:', err);
+      btn.textContent   = 'Error, try again';
+      btn.style.opacity = '1';
+      btn.disabled      = false;
+      setTimeout(function() { btn.textContent = original; }, 3000);
+    }
+  }
+
+    var API_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,avalanche-2&vs_currencies=usd&include_24hr_change=true');
+
+  async function fetchPrices() {
+    try {
+      var res = await fetch(API_URL);
+      if (!res.ok) throw new Error('Failed');
+      var d = await res.json();
+      liveData = d;
+      var pillMap = { 'bitcoin': 'pill-btc', 'ethereum': 'pill-eth', 'solana': 'pill-sol', 'avalanche-2': 'pill-avax' };
+      Object.entries(pillMap).forEach(function(entry) {
+        var id = entry[0], elId = entry[1];
+        var coin = d[id]; var el = document.getElementById(elId);
+        if (coin && el) { var change = coin.usd_24h_change; el.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%'; el.className = 'pill-change ' + (change >= 0 ? 'up' : 'down'); }
+      });
+      if (d[activeCoinId]) {
+        var price = d[activeCoinId].usd; var change = d[activeCoinId].usd_24h_change;
+        document.getElementById('chart-price').textContent   = formatPrice(price);
+        document.getElementById('summary-price').textContent = formatPrice(price);
+        var changeEl = document.getElementById('chart-change');
+        changeEl.textContent = (change >= 0 ? '▲ +' : '▼ ') + change.toFixed(2) + '% today';
+        changeEl.className   = 'price-change ' + (change >= 0 ? 'up' : 'down');
+        var inputVal = parseFloat(document.getElementById('usd-input').value);
+        if (inputVal) calcCoin();
+      }
+      // Trigger AI signal once prices are loaded (if not already fetching)
+      if (!window._signalFetched && window._getAISignal && d[activeCoinId]) {
+        window._signalFetched = true;
+        var _c      = coinConfig[activeCoinId];
+        var _price  = d[activeCoinId].usd;
+        var _change = d[activeCoinId].usd_24h_change;
+        document.getElementById('ai-signal').className       = 'inline-signal hold';
+        document.getElementById('signal-action').textContent  = 'Analyzing...';
+        document.getElementById('conf-fill').style.width      = '0%';
+        document.getElementById('conf-pct').textContent       = '...';
+        window._getAISignal(_c.name, _c.symbol, _price, _change, activeTimeframe).then(function(signal) {
+          if (signal) {
+            document.getElementById('ai-signal').className       = 'inline-signal ' + signal.signalType;
+            document.getElementById('signal-action').textContent  = signal.signal;
+            document.getElementById('conf-fill').style.width      = signal.confidence + '%';
+            document.getElementById('conf-pct').textContent       = signal.confidence + '%';
+          } else {
+            var _fb = coinConfig[activeCoinId];
+            document.getElementById('ai-signal').className       = 'inline-signal ' + _fb.signalType;
+            document.getElementById('signal-action').textContent  = _fb.signal;
+            document.getElementById('conf-fill').style.width      = _fb.conf + '%';
+            document.getElementById('conf-pct').textContent       = _fb.conf + '%';
+          }
+          window._signalFetched = false;
+        });
+      }
+    } catch (err) { console.warn('Price fetch failed:', err.message); }
+  }
+
+  fetchPrices();
+  updateChart(activeCoinId, activeTimeframe);
+  setInterval(fetchPrices, 30000);
+</script>
+</body>
+</html>

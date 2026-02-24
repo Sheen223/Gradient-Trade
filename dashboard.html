@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradientTrade — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+      <path d="M20 4 L36 14 L36 26 L20 36 L4 26 L4 14 Z" stroke="rgba(127,206,206,0.9)" stroke-width="2" fill="none"/>
+      <path d="M20 4 L20 36 M4 14 L36 26 M4 26 L36 14" stroke="rgba(127,206,206,0.4)" stroke-width="1.5"/>
+      <circle cx="20" cy="20" r="4" fill="rgba(127,206,206,0.9)"/>
+    </svg>
+    GradientTrade
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="dashboard.html" class="nav-item active"><span class="nav-icon"></span> Dashboard</a>
+    <a href="trade.html"     class="nav-item"><span class="nav-icon"></span> Trade</a>
+    <a href="leaderboard.html" class="nav-item"><span class="nav-icon"></span> Leaderboard</a>
+    <a href="portfolio.html" class="nav-item"><span class="nav-icon"></span> Portfolio</a>
+    <a href="settings.html"  class="nav-item"><span class="nav-icon"></span> Settings</a>
+  </nav>
+
+  <div class="sidebar-user">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">??</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-balance">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <div class="topbar">
+    <h2>Dashboard</h2>
+    <div class="topbar-right">
+      <div class="time-filters">
+        <button class="tf active">1H</button>
+        <button class="tf">4H</button>
+        <button class="tf">24H</button>
+        <button class="tf">7D</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Portfolio Summary Cards -->
+  <div class="portfolio-cards">
+    <div class="card">
+      <div class="card-label">Portfolio Value</div>
+      <div class="card-value big" id="portfolio-value">—</div>
+      <div class="card-sub" id="portfolio-sub">Loading...</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Unrealized P&amp;L</div>
+      <div class="card-value" id="daily-pnl">—</div>
+      <div class="card-sub" id="daily-sub">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total Trades</div>
+      <div class="card-value" id="total-trades">—</div>
+      <div class="card-sub" style="color:var(--text-muted);" id="wins-sub">—</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <div class="chart-coin">
+        <div class="coin-icon" id="chart-icon">₿</div>
+        <div>
+          <div class="chart-coin-name" id="chart-coin-name">Bitcoin</div>
+          <div class="chart-coin-price" id="chart-coin-sub">BTC / USD</div>
+        </div>
+      </div>
+      <div class="chart-price-big">
+        <div class="price" id="btc-chart-price">—</div>
+        <div class="change" id="btc-chart-change">—</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="priceChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Positions -->
+  <div class="positions-header">
+    <h3>Open Positions</h3>
+  </div>
+  <div class="positions-table">
+    <div class="table-head">
+      <span>Asset</span>
+      <span>Avg Buy</span>
+      <span>Value</span>
+      <span>Price</span>
+      <span>Unrealized P&amp;L</span>
+    </div>
+    <div id="positions-body">
+      <div style="padding:20px;opacity:0.5;text-align:center;">Loading trades...</div>
+    </div>
+  </div>
+
+</main>
+
+<!-- RIGHT PANEL -->
+<aside class="right-panel">
+
+  <div class="panel-title">🤖 AI Signal — OpenGradient</div>
+  <div class="ai-signal">
+    <div class="signal-coin-row">
+      <div class="signal-coin-name">Bitcoin (BTC)</div>
+      <div class="signal-powered">via OpenGradient</div>
+    </div>
+    <div class="signal-badge buy-signal">
+      <span class="signal-word">BUY</span>
+      <div class="signal-sub">Strong momentum detected</div>
+    </div>
+    <div class="confidence-bar">
+      <div class="conf-label">
+        <span>Confidence</span>
+        <span>84%</span>
+      </div>
+      <div class="conf-track">
+        <div class="conf-fill" style="width: 84%"></div>
+      </div>
+    </div>
+    <button class="signal-action-btn" onclick="window.location.href='trade.html'">Execute Trade →</button>
+  </div>
+
+  <div class="panel-title">
+    Live Prices
+    <span id="last-updated" style="font-size:0.65rem;opacity:0.5;text-transform:none;letter-spacing:0;margin-left:6px;"></span>
+  </div>
+  <div class="price-list">
+    <div class="price-item active">
+      <div class="price-coin">
+        <div class="coin-icon" style="width:30px;height:30px;font-size:0.7rem;">₿</div>
+        <div><div class="price-coin-name">Bitcoin</div><div class="price-coin-sub">BTC</div></div>
+      </div>
+      <div class="price-right">
+        <div class="price-val" id="btc-price">—</div>
+        <div class="price-chg" id="btc-change">—</div>
+      </div>
+    </div>
+    <div class="price-item">
+      <div class="price-coin">
+        <div class="coin-icon eth" style="width:30px;height:30px;font-size:0.7rem;">Ξ</div>
+        <div><div class="price-coin-name">Ethereum</div><div class="price-coin-sub">ETH</div></div>
+      </div>
+      <div class="price-right">
+        <div class="price-val" id="eth-price">—</div>
+        <div class="price-chg" id="eth-change">—</div>
+      </div>
+    </div>
+    <div class="price-item">
+      <div class="price-coin">
+        <div class="coin-icon sol" style="width:30px;height:30px;font-size:0.7rem;">◎</div>
+        <div><div class="price-coin-name">Solana</div><div class="price-coin-sub">SOL</div></div>
+      </div>
+      <div class="price-right">
+        <div class="price-val" id="sol-price">—</div>
+        <div class="price-chg" id="sol-change">—</div>
+      </div>
+    </div>
+    <div class="price-item">
+      <div class="price-coin">
+        <div class="coin-icon" style="width:30px;height:30px;font-size:0.65rem;background:linear-gradient(135deg,#e84142,#ff7b7b);">A</div>
+        <div><div class="price-coin-name">Avalanche</div><div class="price-coin-sub">AVAX</div></div>
+      </div>
+      <div class="price-right">
+        <div class="price-val" id="avax-price">—</div>
+        <div class="price-chg" id="avax-change">—</div>
+      </div>
+    </div>
+  </div>
+
+</aside>
+
+<!-- AUTH + DATA -->
+<script type="module">
+  import { requireAuth, loadSidebar, getUserTrades } from './firebase.js';
+
+  const coinIdMap = { Bitcoin: 'bitcoin', Ethereum: 'ethereum', Solana: 'solana', Avalanche: 'avalanche-2' };
+  const coinIcons = { Bitcoin: '&#x20BF;', Ethereum: '&#926;', Solana: '&#9676;', Avalanche: 'A' };
+  const coinBgs   = { Bitcoin: '#f7931a,#ffb347', Ethereum: '#627eea,#a8b8f8', Solana: '#9945ff,#14f195', Avalanche: '#e84142,#ff7b7b' };
+
+  // Compute net holdings per coin from trade history
+  function computeHoldings(trades) {
+    const h = {};
+    trades.forEach(t => {
+      if (!h[t.coinName]) h[t.coinName] = { coinAmount: 0, totalCost: 0, coinId: coinIdMap[t.coinName] || t.coin };
+      if (t.type === 'buy') {
+        h[t.coinName].coinAmount += t.coinAmount;
+        h[t.coinName].totalCost  += t.amountUSD;
+      } else {
+        h[t.coinName].coinAmount -= t.coinAmount;
+        h[t.coinName].totalCost  -= t.amountUSD;
+      }
+    });
+    // Remove fully sold positions
+    Object.keys(h).forEach(k => { if (h[k].coinAmount <= 0.000001) delete h[k]; });
+    return h;
+  }
+
+  // Render positions table with live prices
+  function renderPositions(holdings, liveData, cashBalance, startBal) {
+    const body = document.getElementById('positions-body');
+    const keys = Object.keys(holdings);
+
+    if (!keys.length) {
+      body.innerHTML = '<div style="padding:20px;opacity:0.5;text-align:center;">No open positions — <a href="trade.html" style="color:var(--teal-deep);">place your first trade</a></div>';
+      return 0; // no unrealized P&L
+    }
+
+    let totalUnrealized = 0;
+
+    body.innerHTML = keys.map(name => {
+      const h         = holdings[name];
+      const coinId    = h.coinId;
+      const price     = liveData[coinId] ? liveData[coinId].usd : 0;
+      const currValue = h.coinAmount * price;
+      const avgCost   = h.totalCost / h.coinAmount;
+      const unrealized = price ? (price - avgCost) * h.coinAmount : 0;
+      const unrealPct  = avgCost ? ((price - avgCost) / avgCost * 100) : 0;
+      totalUnrealized += unrealized;
+
+      const pnlStr = (unrealized >= 0 ? '+$' : '-$') + Math.abs(unrealized).toFixed(2) +
+                     ' (' + (unrealPct >= 0 ? '+' : '') + unrealPct.toFixed(1) + '%)';
+      const icon = coinIcons[name] || '?';
+      const bg   = coinBgs[name]   || '#3A9AAA,#163d30';
+
+      return `<div class="table-row">
+        <div class="row-coin">
+          <div class="coin-icon" style="width:28px;height:28px;font-size:0.65rem;background:linear-gradient(135deg,${bg});">${icon}</div>
+          <div><div>${name}</div><div class="row-coin-sub">${h.coinAmount.toFixed(5)} coins</div></div>
+        </div>
+        <span style="font-size:0.8rem;opacity:0.7;">Avg $${avgCost.toLocaleString('en-US',{maximumFractionDigits:2})}</span>
+        <span>${price ? '$' + currValue.toLocaleString('en-US',{maximumFractionDigits:2}) : '—'}</span>
+        <span>${price ? '$' + price.toLocaleString('en-US',{maximumFractionDigits:2}) : '—'}</span>
+        <span class="${unrealized >= 0 ? 'up' : 'down'}">${price ? pnlStr : '—'}</span>
+      </div>`;
+    }).join('');
+
+    return totalUnrealized;
+  }
+
+  // Update all portfolio cards
+  function updateCards(cashBalance, startBal, totalUnrealized, holdings, liveData, trades) {
+    // Total holdings market value
+    let holdingsValue = 0;
+    Object.keys(holdings).forEach(name => {
+      const coinId = holdings[name].coinId;
+      const price  = liveData[coinId] ? liveData[coinId].usd : 0;
+      holdingsValue += holdings[name].coinAmount * price;
+    });
+
+    const portfolioValue = cashBalance + holdingsValue;
+    const totalPnl       = portfolioValue - startBal;
+    const returnPct      = ((totalPnl / startBal) * 100).toFixed(1);
+
+    // Portfolio Value card
+    document.getElementById('portfolio-value').textContent =
+      '$' + portfolioValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById('portfolio-sub').textContent =
+      (totalPnl >= 0 ? '▲ +$' : '▼ -$') + Math.abs(totalPnl).toLocaleString('en-US', { minimumFractionDigits: 2 }) +
+      ' (' + (totalPnl >= 0 ? '+' : '') + returnPct + '%) all time';
+    document.getElementById('portfolio-sub').className = 'card-sub ' + (totalPnl >= 0 ? 'up' : 'down');
+
+    // Unrealized P&L card
+    const upnlStr = (totalUnrealized >= 0 ? '+$' : '-$') + Math.abs(totalUnrealized).toFixed(2);
+    document.getElementById('daily-pnl').textContent = upnlStr;
+    document.getElementById('daily-pnl').className   = 'card-value ' + (totalUnrealized >= 0 ? 'up' : 'down');
+    document.getElementById('daily-sub').textContent  =
+      Object.keys(holdings).length + ' open position(s)' +
+      (holdingsValue > 0 ? ' · $' + holdingsValue.toLocaleString('en-US',{maximumFractionDigits:2}) + ' held' : '');
+    document.getElementById('daily-sub').className = 'card-sub ' + (totalUnrealized >= 0 ? 'up' : 'down');
+  }
+
+  requireAuth(async (user, userData) => {
+    loadSidebar(user, userData);
+
+    const cashBalance = userData.balance        ?? 10000;
+    const startBal    = userData.startingBalance ?? 10000;
+    const wins        = userData.wins   ?? 0;
+    const losses      = userData.losses ?? 0;
+
+    // Total trades card
+    const sells   = wins + losses;
+    const winRate = sells > 0 ? Math.round((wins / sells) * 100) : 0;
+    document.getElementById('total-trades').textContent = userData.totalTrades ?? 0;
+    document.getElementById('wins-sub').textContent = winRate + '% win rate · ' + wins + 'W / ' + losses + 'L';
+
+    // Initial render with cash only (before prices load)
+    document.getElementById('portfolio-value').textContent =
+      '$' + cashBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
+    document.getElementById('daily-pnl').textContent  = '—';
+    document.getElementById('daily-sub').textContent  = 'Loading positions...';
+
+    // Load trades + compute holdings
+    const trades   = await getUserTrades(user?.uid || null);
+    const holdings = computeHoldings(trades);
+
+    // Store globally so price updates can recalculate live
+    window._dashHoldings  = holdings;
+    window._dashCashBal   = cashBalance;
+    window._dashStartBal  = startBal;
+
+    // Hook into the live price feed — called every time prices update
+    window._onPriceUpdate = function(liveData) {
+      const unrealized = renderPositions(holdings, liveData, cashBalance, startBal);
+      updateCards(cashBalance, startBal, unrealized, holdings, liveData, trades);
+    };
+
+    // If prices already loaded, trigger immediately
+    if (window._liveData && Object.keys(window._liveData).length) {
+      window._onPriceUpdate(window._liveData);
+    } else {
+      // Show positions table with no prices yet
+      renderPositions(holdings, {}, cashBalance, startBal);
+    }
+  });
+</script>
+
+<!-- CHART + LIVE PRICES (no auth needed) -->
+<script>
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, 220);
+  gradient.addColorStop(0, 'rgba(91,184,196,0.35)');
+  gradient.addColorStop(1, 'rgba(91,184,196,0)');
+
+  const priceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        borderColor: '#3A9AAA', borderWidth: 2.5,
+        backgroundColor: gradient, fill: true, tension: 0.45,
+        pointRadius: 4, pointBackgroundColor: '#3A9AAA',
+        pointBorderColor: 'white', pointBorderWidth: 2, pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor: 'rgba(13,46,46,0.9)', titleColor: 'rgba(255,255,255,0.6)',
+        bodyColor: 'white', bodyFont: { weight: '700', size: 14 },
+        padding: 12, cornerRadius: 10,
+        callbacks: { label: c => '$' + c.parsed.y.toLocaleString() }
+      }},
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: 'rgba(15,44,44,0.5)', font: { size: 11 }, maxTicksLimit: 7 } },
+        y: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: 'rgba(15,44,44,0.5)', font: { size: 11 }, callback: v => '$' + v.toLocaleString() } }
+      }
+    }
+  });
+
+  const coinMap   = { 'btc': 'bitcoin', 'eth': 'ethereum', 'sol': 'solana', 'avax': 'avalanche-2' };
+  const coinNames = { 'bitcoin': 'Bitcoin', 'ethereum': 'Ethereum', 'solana': 'Solana', 'avalanche-2': 'Avalanche' };
+  const coinIcons = {
+    'bitcoin':     { symbol: '₿', style: 'background:linear-gradient(135deg,#f7931a,#ffb347)' },
+    'ethereum':    { symbol: 'Ξ', style: 'background:linear-gradient(135deg,#627eea,#a8b8f8)' },
+    'solana':      { symbol: '◎', style: 'background:linear-gradient(135deg,#9945ff,#14f195)' },
+    'avalanche-2': { symbol: 'A', style: 'background:linear-gradient(135deg,#e84142,#ff7b7b)' },
+  };
+
+  const timeframes = {
+    '1H':  { days: 0.04167, format: d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    '4H':  { days: 0.1667,  format: d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    '24H': { days: 1,       format: d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+    '7D':  { days: 7,       format: d => {
+      const weekday = d.toLocaleDateString([], { weekday: 'short' });
+      const day     = String(d.getDate()).padStart(2, '0');
+      const month   = String(d.getMonth() + 1).padStart(2, '0');
+      return `${weekday}, ${day}/${month}`;
+    }},
+  };
+
+  let activeCoinId    = 'bitcoin';
+  let activeTimeframe = '1H';
+  let liveData        = {};
+
+  async function fetchChartData(coinId, timeframe) {
+    const tf = timeframes[timeframe];
+    try {
+      const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${tf.days}`);
+      if (!res.ok) throw new Error('Failed');
+      const data    = await res.json();
+      const prices  = data.prices;
+      const step    = Math.max(1, Math.floor(prices.length / 30));
+      const reduced = prices.filter((_, i) => i % step === 0);
+      return { labels: reduced.map(p => tf.format(new Date(p[0]))), values: reduced.map(p => p[1]) };
+    } catch (err) { console.warn('Chart fetch failed:', err.message); return null; }
+  }
+
+  async function updateChart(coinId, timeframe) {
+    const nameEl = document.getElementById('chart-coin-name');
+    if (nameEl) nameEl.textContent = coinNames[coinId] + ' (loading...)';
+    const result = await fetchChartData(coinId, timeframe);
+    if (result) { priceChart.data.labels = result.labels; priceChart.data.datasets[0].data = result.values; priceChart.update(); }
+    const symbol = Object.keys(coinMap).find(k => coinMap[k] === coinId)?.toUpperCase();
+    if (nameEl) nameEl.textContent = coinNames[coinId];
+    const subEl = document.getElementById('chart-coin-sub');
+    if (subEl) subEl.textContent = symbol + ' / USD • ' + timeframe;
+    const iconEl = document.getElementById('chart-icon');
+    const icon   = coinIcons[coinId];
+    if (iconEl && icon) { iconEl.textContent = icon.symbol; iconEl.setAttribute('style', icon.style); }
+    if (liveData[coinId]) updateChartPrice(coinId);
+  }
+
+  function updateChartPrice(coinId) {
+    const price  = liveData[coinId].usd;
+    const change = liveData[coinId].usd_24h_change;
+    const cp = document.getElementById('btc-chart-price');
+    const cc = document.getElementById('btc-chart-change');
+    if (cp) cp.textContent = formatPrice(price);
+    if (cc) { cc.textContent = (change >= 0 ? '▲ +' : '▼ ') + change.toFixed(2) + '% today'; cc.className = 'change ' + (change >= 0 ? 'up' : 'down'); }
+  }
+
+  document.querySelectorAll('.tf').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tf').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeTimeframe = btn.textContent.trim();
+      updateChart(activeCoinId, activeTimeframe);
+    });
+  });
+
+  document.querySelectorAll('.price-item').forEach((item, index) => {
+    const coinKeys = ['bitcoin', 'ethereum', 'solana', 'avalanche-2'];
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.price-item').forEach(i => i.classList.remove('active'));
+      item.classList.add('active');
+      activeCoinId = coinKeys[index];
+      updateChart(activeCoinId, activeTimeframe);
+    });
+  });
+
+  function formatPrice(price) {
+    if (price >= 1000) return '$' + price.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    if (price >= 1)    return '$' + price.toFixed(2);
+    return '$' + price.toFixed(4);
+  }
+
+  function updateCoin(priceId, changeId, price, change) {
+    const priceEl  = document.getElementById(priceId);
+    const changeEl = document.getElementById(changeId);
+    if (priceEl)  priceEl.textContent = formatPrice(price);
+    if (changeEl) { changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%'; changeEl.className = 'price-chg ' + (change >= 0 ? 'up' : 'down'); }
+  }
+
+  const API_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,avalanche-2&vs_currencies=usd&include_24hr_change=true';
+
+  async function fetchPrices() {
+    try {
+      const res = await fetch(API_URL);
+      if (!res.ok) throw new Error('Failed');
+      const d = await res.json();
+      liveData = d;
+      if (d.bitcoin)     updateCoin('btc-price',  'btc-change',  d.bitcoin['usd'],     d.bitcoin['usd_24h_change']);
+      if (d.ethereum)    updateCoin('eth-price',  'eth-change',  d.ethereum['usd'],    d.ethereum['usd_24h_change']);
+      if (d.solana)      updateCoin('sol-price',  'sol-change',  d.solana['usd'],      d.solana['usd_24h_change']);
+      if (d['avalanche-2']) updateCoin('avax-price', 'avax-change', d['avalanche-2']['usd'], d['avalanche-2']['usd_24h_change']);
+      if (d[activeCoinId]) updateChartPrice(activeCoinId);
+      const lu = document.getElementById('last-updated');
+      if (lu) lu.textContent = 'Updated ' + new Date().toLocaleTimeString();
+      // Update portfolio with live prices
+      window._liveData = d;
+      if (window._onPriceUpdate) window._onPriceUpdate(d);
+    } catch (err) { console.warn('Price fetch failed:', err.message); }
+  }
+
+  fetchPrices();
+  updateChart(activeCoinId, activeTimeframe);
+  setInterval(fetchPrices, 30000);
+</script>
+</body>
+</html>

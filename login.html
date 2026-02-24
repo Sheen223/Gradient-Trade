@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradientTrade — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --btn-dark: #163d30;
+    --text-dark: #0f2c2c;
+    --text-muted: rgba(15,44,44,0.55);
+    --teal-mid: #5BB8C4;
+    --red: #a02020;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: linear-gradient(135deg, #7ECECE 0%, #5BB8C4 50%, #3A9AAA 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 40px 20px;
+  }
+
+  .login-card {
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 24px;
+    padding: 32px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 24px 60px rgba(13,46,46,0.15);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    color: var(--text-dark);
+  }
+
+  .login-heading {
+    text-align: center;
+    margin-bottom: 8px;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    line-height: 1.2;
+    color: var(--text-dark);
+  }
+  .login-heading em { font-style: italic; color: var(--btn-dark); }
+
+  .login-sub {
+    text-align: center;
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .divider-line { flex: 1; height: 1px; background: rgba(255,255,255,0.5); }
+  .divider-text { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em; }
+
+  .btn-google {
+    width: 100%;
+    padding: 13px;
+    border-radius: 12px;
+    border: none;
+    background: white;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+    box-shadow: 0 2px 12px rgba(13,46,46,0.1);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .btn-google:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,46,46,0.15); }
+  .btn-google:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+  .btn-google svg { flex-shrink: 0; }
+
+  /* Error message */
+  .error-msg {
+    display: none;
+    background: rgba(160,32,32,0.1);
+    border: 1px solid rgba(160,32,32,0.25);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.8rem;
+    color: var(--red);
+    margin-bottom: 12px;
+    text-align: center;
+    line-height: 1.45;
+  }
+  .error-msg.visible { display: block; }
+
+  /* Loading spinner */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(15,44,44,0.15);
+    border-top-color: var(--btn-dark);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .features {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 20px;
+  }
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .feature-dot { width: 5px; height: 5px; border-radius: 50%; background: #3A9AAA; flex-shrink: 0; }
+
+  .login-footer {
+    text-align: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .powered-by {
+    font-size: 0.74rem;
+    color: rgba(15,44,44,0.5);
+    text-align: center;
+  }
+  .powered-by span { font-weight: 700; color: var(--btn-dark); }
+  .powered-by a { color: var(--btn-dark); font-weight: 700; text-decoration: none; }
+  .powered-by a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+
+  <div class="logo">
+    <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+      <path d="M20 4 L36 14 L36 26 L20 36 L4 26 L4 14 Z" stroke="rgba(22,61,48,0.9)" stroke-width="2" fill="none"/>
+      <path d="M20 4 L20 36 M4 14 L36 26 M4 26 L36 14" stroke="rgba(22,61,48,0.4)" stroke-width="1.5"/>
+      <circle cx="20" cy="20" r="4" fill="rgba(22,61,48,0.9)"/>
+    </svg>
+    GradientTrade
+  </div>
+
+  <div class="login-heading">
+    Trade smarter<br>with <em>AI signals</em>
+  </div>
+
+  <p class="login-sub">
+    Paper trade crypto powered by OpenGradient AI.<br>
+    Compete on the leaderboard. Pay nothing.
+  </p>
+
+  <div class="divider">
+    <div class="divider-line"></div>
+    <span class="divider-text">SIGN IN TO CONTINUE</span>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- Error message -->
+  <div class="error-msg" id="error-msg"></div>
+
+  <!-- Google Sign In -->
+  <button class="btn-google" id="google-btn">
+    <!-- Google "G" logo -->
+    <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      <path fill="none" d="M0 0h48v48H0z"/>
+    </svg>
+    <span id="google-btn-text">Continue with Google</span>
+    <div class="spinner" id="spinner"></div>
+  </button>
+
+  <div class="features">
+    <div class="feature-item"><div class="feature-dot"></div>Real-time crypto prices from CoinGecko</div>
+    <div class="feature-item"><div class="feature-dot"></div>AI buy/sell signals powered by OpenGradient</div>
+    <div class="feature-item"><div class="feature-dot"></div>Compete on a live leaderboard</div>
+    <div class="feature-item"><div class="feature-dot"></div>100% free paper trading</div>
+  </div>
+
+  <div class="login-footer">By continuing you agree to our Terms of Service.</div>
+
+</div>
+
+<div class="powered-by">
+  AI signals by <span>OpenGradient</span> &middot; Built by
+  <a href="https://x.com/Sandsk1n" target="_blank">Sheen</a>
+</div>
+
+<script type="module">
+  import { initializeApp }                          from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
+                                                    from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+                                                    from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyDkujQjqy2JwNVw8nEmXvPMa4gruKu1DWQ",
+    authDomain:        "gradienttrade-1.firebaseapp.com",
+    projectId:         "gradienttrade-1",
+    storageBucket:     "gradienttrade-1.firebasestorage.app",
+    messagingSenderId: "623944101785",
+    appId:             "1:623944101785:web:c0e670159c9835ed04ed08"
+  };
+
+  const app      = initializeApp(firebaseConfig);
+  const auth     = getAuth(app);
+  const db       = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  const STARTING_BALANCE = 10000;
+
+  const btn       = document.getElementById('google-btn');
+  const btnText   = document.getElementById('google-btn-text');
+  const spinner   = document.getElementById('spinner');
+  const errorMsg  = document.getElementById('error-msg');
+
+  function setLoading(loading) {
+    btn.disabled         = loading;
+    spinner.style.display = loading ? 'block' : 'none';
+    btnText.textContent  = loading ? 'Signing in...' : 'Continue with Google';
+  }
+
+  function showError(msg) {
+    errorMsg.textContent = msg;
+    errorMsg.classList.add('visible');
+  }
+
+  function hideError() {
+    errorMsg.classList.remove('visible');
+  }
+
+  // If already signed in, skip login entirely
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      window.location.href = 'dashboard.html';
+    }
+  });
+
+  btn.addEventListener('click', async () => {
+    hideError();
+    setLoading(true);
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user   = result.user;
+
+      // Create or load Firestore user doc
+      const userRef = doc(db, 'users', user.uid);
+      const snap    = await getDoc(userRef);
+
+      if (!snap.exists()) {
+        // New user — create their account
+        await setDoc(userRef, {
+          uid:             user.uid,
+          displayName:     user.displayName || 'Trader',
+          email:           user.email,
+          photo:           user.photoURL || '',
+          balance:         STARTING_BALANCE,
+          startingBalance: STARTING_BALANCE,
+          totalTrades:     0,
+          tradeCount:      0,
+          wins:            0,
+          winCount:        0,
+          losses:          0,
+          createdAt:       serverTimestamp(),
+        });
+      }
+
+      // Cache key user data locally for fast sidebar loads
+      const userData = snap.exists() ? snap.data() : { displayName: user.displayName, balance: STARTING_BALANCE };
+      localStorage.setItem('gt_display_name', userData.displayName || user.displayName);
+      localStorage.setItem('gt_email',        user.email);
+      localStorage.setItem('gt_balance',      userData.balance ?? STARTING_BALANCE);
+      if (user.photoURL) localStorage.setItem('gt_photo', user.photoURL);
+
+      // Redirect to dashboard
+      window.location.href = 'dashboard.html';
+
+    } catch (err) {
+      setLoading(false);
+      console.error('Google sign-in error:', err);
+
+      // Show a friendly error based on the Firebase error code
+      switch (err.code) {
+        case 'auth/popup-closed-by-user':
+        case 'auth/cancelled-popup-request':
+          // User closed popup — no message needed
+          break;
+        case 'auth/popup-blocked':
+          showError('Popup was blocked by your browser. Please allow popups for this site and try again.');
+          break;
+        case 'auth/network-request-failed':
+          showError('Network error. Please check your connection and try again.');
+          break;
+        case 'auth/too-many-requests':
+          showError('Too many sign-in attempts. Please wait a moment and try again.');
+          break;
+        default:
+          showError('Sign-in failed. Please try again. (' + err.code + ')');
+      }
+    }
+  });
+</script>
+</body>
+</html>

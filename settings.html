@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradientTrade — Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+      <path d="M20 4 L36 14 L36 26 L20 36 L4 26 L4 14 Z" stroke="rgba(127,206,206,0.9)" stroke-width="2" fill="none"/>
+      <path d="M20 4 L20 36 M4 14 L36 26 M4 26 L36 14" stroke="rgba(127,206,206,0.4)" stroke-width="1.5"/>
+      <circle cx="20" cy="20" r="4" fill="rgba(127,206,206,0.9)"/>
+    </svg>
+    GradientTrade
+  </div>
+  <nav class="sidebar-nav">
+    <a href="dashboard.html"   class="nav-item"><span class="nav-icon"></span> Dashboard</a>
+    <a href="trade.html"       class="nav-item"><span class="nav-icon"></span> Trade</a>
+    <a href="leaderboard.html" class="nav-item"><span class="nav-icon"></span> Leaderboard</a>
+    <a href="portfolio.html"   class="nav-item"><span class="nav-icon"></span> Portfolio</a>
+    <a href="settings.html"    class="nav-item active"><span class="nav-icon"></span> Settings</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-info">
+      <div class="user-avatar" style="overflow:hidden;position:relative;" id="user-avatar">
+        <img id="sidebar-avatar-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0;" />
+        <span id="sidebar-avatar-initials">??</span>
+      </div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-balance">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar"><h2>Settings</h2></div>
+
+  <!-- Profile Card -->
+  <div class="profile-card">
+    <div class="profile-avatar" onclick="triggerAvatarUpload()" title="Click to change photo">
+      <img id="profile-avatar-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;position:absolute;inset:0;" />
+      <span id="profile-avatar-initials">??</span>
+      <div class="avatar-edit">✏️</div>
+      <button id="remove-avatar-btn" onclick="event.stopPropagation(); removeAvatar()" style="display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.55);color:white;border:none;font-size:0.65rem;padding:4px 0;cursor:pointer;border-radius:0 0 50% 50%;">Remove</button>
+    </div>
+    <input type="file" id="avatar-file-input" accept="image/*" style="display:none;">
+    <div class="profile-info">
+      <div class="profile-name-row">
+        <div class="profile-name" id="profile-name">Loading...</div>
+        <div class="google-badge">🔵 Google</div>
+      </div>
+      <div class="profile-email" id="profile-email"></div>
+      <div class="profile-stats">
+        <div class="profile-stat"><div class="val" id="ps-balance">—</div><div class="lbl">Balance</div></div>
+        <div class="profile-stat"><div class="val" id="ps-trades">—</div><div class="lbl">Trades</div></div>
+        <div class="profile-stat"><div class="val" id="ps-rank">—</div><div class="lbl">Rank</div></div>
+        <div class="profile-stat"><div class="val" id="ps-winrate">—</div><div class="lbl">Win Rate</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account -->
+  <div class="settings-section">
+    <div class="section-label">Account</div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">👤</div>
+          <div><div class="row-title">Display Name</div><div class="row-sub">Shown on the leaderboard</div></div>
+        </div>
+        <input class="settings-input" id="display-name-input" type="text" value="" oninput="showSave()"/>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">🔗</div>
+          <div><div class="row-title">Connected Account</div><div class="row-sub" id="connected-email"></div></div>
+        </div>
+        <button class="btn-sm btn-outline" onclick="disconnectAccount()">Sign Out</button>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">🌐</div>
+          <div><div class="row-title">Public Profile</div><div class="row-sub">Let others see your trades on leaderboard</div></div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked onchange="showSave()"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trading -->
+  <div class="settings-section">
+    <div class="section-label">Trading</div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">💰</div>
+          <div><div class="row-title">Starting Balance</div><div class="row-sub">Reset your paper trading account to $10,000</div></div>
+        </div>
+        <button class="btn-sm btn-primary" onclick="confirmReset()">Reset to $10,000</button>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">🤖</div>
+          <div><div class="row-title">AI Signal Alerts</div><div class="row-sub">Get notified when OpenGradient detects a strong signal</div></div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked onchange="showSave()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">📊</div>
+          <div><div class="row-title">Default Chart Period</div><div class="row-sub">What timeframe to show by default</div></div>
+        </div>
+        <select class="settings-input" onchange="showSave()">
+          <option>1 Hour</option><option>4 Hours</option><option>1 Day</option><option>7 Days</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications -->
+  <div class="settings-section">
+    <div class="section-label">Notifications</div>
+    <div class="settings-card">
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">📈</div>
+          <div><div class="row-title">Price Alerts</div><div class="row-sub">Notify me of significant price movements</div></div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked onchange="showSave()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">🏆</div>
+          <div><div class="row-title">Leaderboard Updates</div><div class="row-sub">Notify me when my ranking changes</div></div>
+        </div>
+        <label class="toggle"><input type="checkbox" onchange="showSave()"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon">✅</div>
+          <div><div class="row-title">Trade Confirmations</div><div class="row-sub">Notify me when a trade is placed</div></div>
+        </div>
+        <label class="toggle"><input type="checkbox" checked onchange="showSave()"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="settings-section">
+    <div class="section-label">Danger Zone</div>
+    <div class="settings-card danger-card">
+      <div class="settings-row">
+        <div class="row-left">
+          <div class="row-icon" style="background:rgba(160,32,32,0.15);">🗑️</div>
+          <div><div class="row-title" style="color:var(--red);">Delete Account</div><div class="row-sub">Permanently delete your account and all data</div></div>
+        </div>
+        <button class="btn-sm btn-danger" onclick="deleteAccount()">Delete Account</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Save Bar -->
+<div class="save-bar" id="saveBar">
+  <span id="save-bar-msg">You have unsaved changes</span>
+  <button class="btn-sm btn-outline" onclick="discardChanges()">Discard</button>
+  <button class="btn-sm btn-primary" onclick="saveSettings()">Save Changes</button>
+</div>
+
+<script type="module">
+  import { requireAuth, loadSidebar, signOut, resetBalance, deleteUserAccount, getLeaderboard, db } from './firebase.js';
+  import { doc, updateDoc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+
+  requireAuth(async (user, userData) => {
+    // Custom sidebar load (settings page has unique avatar elements)
+    const sidebarName = document.getElementById('user-name');
+    const sidebarBal  = document.querySelector('.user-balance');
+    if (sidebarName) sidebarName.textContent = userData.displayName || 'Trader';
+    if (sidebarBal)  sidebarBal.textContent  = '$' + Number(userData.balance).toLocaleString('en-US', { minimumFractionDigits: 2 });
+
+    const savedName   = userData.displayName || user?.displayName || 'Guest';
+    const savedEmail  = user?.email || '';
+    const savedAvatar = localStorage.getItem('gt_avatar');
+    const googlePhoto = user?.photoURL || '';
+    const initials    = savedName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+    let originalName = savedName;
+
+    // Profile card stats
+    document.getElementById('ps-balance').textContent = '$' + Number(userData.balance).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    document.getElementById('ps-trades').textContent  = userData.totalTrades ?? 0;
+    const wins   = userData.wins ?? 0;
+    const total  = userData.totalTrades ?? 0;
+    document.getElementById('ps-winrate').textContent = total > 0 ? Math.round((wins / total) * 100) + '%' : '—';
+
+    // Get rank from leaderboard
+    try {
+      const leaders = await getLeaderboard();
+      const myEntry = leaders.find(l => l.uid === user?.uid);
+      document.getElementById('ps-rank').textContent = myEntry ? '#' + myEntry.rank : '—';
+    } catch(e) { document.getElementById('ps-rank').textContent = '—'; }
+
+    // Populate fields
+    document.getElementById('display-name-input').value = savedName;
+    document.getElementById('profile-name').textContent  = savedName;
+    if (savedEmail) {
+      document.getElementById('profile-email').textContent   = savedEmail;
+      document.getElementById('connected-email').textContent = savedEmail;
+    }
+
+    // Avatar
+    function setAvatarImage(src) {
+      ['profile-avatar-img', 'sidebar-avatar-img'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.src = src; el.style.display = 'block'; }
+      });
+      ['profile-avatar-initials', 'sidebar-avatar-initials'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    }
+
+    function setAvatarInitials(text) {
+      ['profile-avatar-img', 'sidebar-avatar-img'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      ['profile-avatar-initials', 'sidebar-avatar-initials'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = text; el.style.display = 'block'; }
+      });
+    }
+
+    const avatarSrc = savedAvatar || googlePhoto;
+    if (avatarSrc) {
+      setAvatarImage(avatarSrc);
+      if (savedAvatar) document.getElementById('remove-avatar-btn').style.display = 'block';
+    } else {
+      setAvatarInitials(initials);
+    }
+
+    // Save bar
+    window.showSave = () => document.getElementById('saveBar').classList.add('visible');
+    window.hideSave = () => document.getElementById('saveBar').classList.remove('visible');
+
+    window.discardChanges = () => {
+      document.getElementById('display-name-input').value = originalName;
+      hideSave();
+    };
+
+    // Save settings
+    window.saveSettings = async () => {
+      const name     = document.getElementById('display-name-input').value.trim() || 'Guest';
+      const inits    = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      originalName   = name;
+
+      localStorage.setItem('gt_display_name', name);
+
+      // Save to Firestore
+      if (user?.uid) {
+        await updateDoc(doc(db, 'users', user.uid), { displayName: name });
+      }
+
+      document.getElementById('profile-name').textContent = name;
+      document.getElementById('user-name').textContent    = name;
+      if (!avatarSrc) setAvatarInitials(inits);
+
+      const msg = document.getElementById('save-bar-msg');
+      msg.textContent = '✓ Saved!';
+      setTimeout(() => { hideSave(); msg.textContent = 'You have unsaved changes'; }, 2500);
+    };
+
+    // Avatar upload
+    window.triggerAvatarUpload = () => document.getElementById('avatar-file-input').click();
+
+    document.getElementById('avatar-file-input').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const dataUrl = e.target.result;
+        localStorage.setItem('gt_avatar', dataUrl);
+        setAvatarImage(dataUrl);
+        document.getElementById('remove-avatar-btn').style.display = 'block';
+        showSave();
+      };
+      reader.readAsDataURL(file);
+    });
+
+    window.removeAvatar = () => {
+      localStorage.removeItem('gt_avatar');
+      const name  = userData.displayName || user?.displayName || 'Guest';
+      const inits = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+      if (googlePhoto) {
+        setAvatarImage(googlePhoto);
+      } else {
+        setAvatarInitials(inits);
+      }
+      document.getElementById('remove-avatar-btn').style.display = 'none';
+      showSave();
+    };
+
+    // Disconnect / sign out
+    window.disconnectAccount = async () => {
+      if (confirm('Sign out of your account?')) {
+        await signOut();
+        window.location.href = 'login.html';
+      }
+    };
+
+    // Reset balance
+    window.confirmReset = async () => {
+      if (confirm('Reset your balance to $10,000 and clear all trades? This cannot be undone.')) {
+        await resetBalance(user?.uid || null);
+        localStorage.setItem('gt_balance', '10000');
+        document.getElementById('ps-balance').textContent = '$10,000';
+        if (sidebarBal) sidebarBal.textContent = '$10,000.00';
+        alert('Balance reset to $10,000.');
+      }
+    };
+
+    // Delete account
+    window.deleteAccount = async () => {
+      if (confirm('Permanently delete your account and all data?')) {
+        if (confirm('This cannot be undone. Are you absolutely sure?')) {
+          await deleteUserAccount(user?.uid || null);
+          window.location.href = 'login.html';
+        }
+      }
+    };
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GradientTrade — Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="portfolio.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+      <path d="M20 4 L36 14 L36 26 L20 36 L4 26 L4 14 Z" stroke="rgba(127,206,206,0.9)" stroke-width="2" fill="none"/>
+      <path d="M20 4 L20 36 M4 14 L36 26 M4 26 L36 14" stroke="rgba(127,206,206,0.4)" stroke-width="1.5"/>
+      <circle cx="20" cy="20" r="4" fill="rgba(127,206,206,0.9)"/>
+    </svg>
+    GradientTrade
+  </div>
+  <nav class="sidebar-nav">
+    <a href="dashboard.html"   class="nav-item"><span class="nav-icon"></span> Dashboard</a>
+    <a href="trade.html"       class="nav-item"><span class="nav-icon"></span> Trade</a>
+    <a href="leaderboard.html" class="nav-item"><span class="nav-icon"></span> Leaderboard</a>
+    <a href="portfolio.html"   class="nav-item active"><span class="nav-icon"></span> Portfolio</a>
+    <a href="settings.html"    class="nav-item"><span class="nav-icon"></span> Settings</a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="user-info">
+      <div class="user-avatar" id="user-avatar">??</div>
+      <div>
+        <div class="user-name" id="user-name">Loading...</div>
+        <div class="user-balance">—</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar"><h2>Portfolio</h2></div>
+
+  <div class="stat-grid">
+    <div class="card"><div class="card-label">Total Value</div><div class="card-value" id="stat-value">—</div><div class="card-sub" id="stat-return">—</div></div>
+    <div class="card"><div class="card-label">Total Profit</div><div class="card-value" id="stat-profit">—</div><div class="card-sub muted">From $10,000 start</div></div>
+    <div class="card"><div class="card-label">Win Rate</div><div class="card-value" id="stat-winrate">—</div><div class="card-sub muted" id="stat-winrate-sub">—</div></div>
+    <div class="card"><div class="card-label">Total Trades</div><div class="card-value" id="stat-trades">—</div><div class="card-sub muted" id="stat-trades-sub">—</div></div>
+  </div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-card-header">
+        <h3>Portfolio Growth</h3>
+        <div class="growth-filters">
+          <button class="growth-tf">24H</button>
+          <button class="growth-tf">7D</button>
+          <button class="growth-tf active">1M</button>
+          <button class="growth-tf">All Time</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="growthChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Allocation</h3>
+      <div class="donut-wrap"><canvas id="allocChart"></canvas></div>
+      <div class="donut-legend" id="donut-legend">
+        <div class="legend-item"><div class="legend-left"><div class="legend-dot" style="background:#f7931a"></div><span class="legend-name">Bitcoin</span></div><span class="legend-pct">—</span></div>
+        <div class="legend-item"><div class="legend-left"><div class="legend-dot" style="background:#627eea"></div><span class="legend-name">Ethereum</span></div><span class="legend-pct">—</span></div>
+        <div class="legend-item"><div class="legend-left"><div class="legend-dot" style="background:#9945ff"></div><span class="legend-name">Solana</span></div><span class="legend-pct">—</span></div>
+        <div class="legend-item"><div class="legend-left"><div class="legend-dot" style="background:#e84142"></div><span class="legend-name">Avalanche</span></div><span class="legend-pct">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="perf-row">
+    <div class="perf-card" id="best-card"><h3>Best Trades</h3><p style="opacity:0.5;padding:12px;">Loading...</p></div>
+    <div class="perf-card" id="worst-card"><h3>Worst Trades</h3><p style="opacity:0.5;padding:12px;">Loading...</p></div>
+  </div>
+
+  <div class="section-title-row">
+    <span class="section-title">Full Trade History</span>
+    <div class="page-nav">
+      <button class="page-btn" id="prev-btn" onclick="changePage(-1)">&#8592;</button>
+      <span class="page-indicator" id="page-indicator">1 / 1</span>
+      <button class="page-btn" id="next-btn" onclick="changePage(1)">&#8594;</button>
+    </div>
+  </div>
+  <div class="history-table">
+    <div class="table-head"><span>Asset</span><span>Type</span><span>Amount</span><span>Price</span><span>P&amp;L</span><span>Date</span></div>
+    <div id="trade-rows"><div style="padding:20px;opacity:0.5;text-align:center;">Loading...</div></div>
+  </div>
+</main>
+
+<script type="module">
+  import { requireAuth, loadSidebar, getUserTrades } from './firebase.js';
+
+  let _init = false;
+
+  requireAuth(async (user, userData) => {
+    loadSidebar(user, userData);
+
+    const balance   = userData?.balance         ?? 10000;
+    const startBal  = userData?.startingBalance ?? 10000;
+
+    // NOTE: stat-value and stat-profit are NOT set here.
+    // They are set below after live prices and coin holdings are calculated,
+    // so that Total Value = USDT cash + current live value of all held coins.
+
+    // Only run charts + trades once (requireAuth fires twice)
+    if (_init) return;
+    _init = true;
+
+    // Charts
+    const gCtx  = document.getElementById('growthChart').getContext('2d');
+    const gGrad = gCtx.createLinearGradient(0, 0, 0, 200);
+    gGrad.addColorStop(0, 'rgba(91,184,196,0.35)');
+    gGrad.addColorStop(1, 'rgba(91,184,196,0)');
+
+    const growthChart = new Chart(gCtx, {
+      type: 'line',
+      data: { labels: [], datasets: [{ data: [], borderColor: '#3A9AAA', borderWidth: 2.5, backgroundColor: gGrad, fill: true, tension: 0.45, pointRadius: 4, pointBackgroundColor: '#3A9AAA', pointBorderColor: 'white', pointBorderWidth: 2, pointHoverRadius: 6 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(13,46,46,0.9)', bodyColor: 'white', bodyFont: { weight: '700', size: 13 }, padding: 10, cornerRadius: 10, callbacks: { label: c => '$' + c.parsed.y.toLocaleString() } } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: 'rgba(15,44,44,0.5)', font: { size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: 'rgba(15,44,44,0.5)', font: { size: 10 }, callback: v => '$' + v.toLocaleString() } } } }
+    });
+
+    const aCtx = document.getElementById('allocChart').getContext('2d');
+    const allocChart = new Chart(aCtx, {
+      type: 'doughnut',
+      data: { labels: ['Bitcoin','Ethereum','Solana','Avalanche'], datasets: [{ data: [25,25,25,25], backgroundColor: ['#f7931a','#627eea','#9945ff','#e84142'], borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)', hoverOffset: 6 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '68%', plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(13,46,46,0.9)', bodyColor: 'white', bodyFont: { weight: '700' }, padding: 10, cornerRadius: 10, callbacks: { label: c => c.label + ': ' + c.parsed + '%' } } } }
+    });
+
+    // ── Load trades + live prices BEFORE building growth chart ──
+    const trades = await getUserTrades(user?.uid || null);
+    const coinIdMap = { Bitcoin: 'bitcoin', Ethereum: 'ethereum', Solana: 'solana', Avalanche: 'avalanche-2' };
+
+    // Fetch live prices for all coins
+    let livePrices = {};
+    try {
+      const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,avalanche-2&vs_currencies=usd');
+      livePrices = await r.json();
+    } catch(e) {}
+
+    // Sort trades oldest first
+    const sorted = [...trades].sort((a, b) => (a.date?.seconds ?? 0) - (b.date?.seconds ?? 0));
+
+    // Replay trades to build real portfolio value series
+    function buildSeries(subset) {
+      if (!subset.length) return { labels: ['Start', 'Now'], data: [startBal, startBal] };
+      const points = [{ label: 'Start', value: startBal }];
+      let cash = startBal;
+      const held = {};
+      subset.forEach(t => {
+        if (t.type === 'buy') {
+          cash -= t.amountUSD;
+          held[t.coinName] = (held[t.coinName] || 0) + t.coinAmount;
+        } else {
+          cash += t.amountUSD;
+          held[t.coinName] = (held[t.coinName] || 0) - t.coinAmount;
+          if (held[t.coinName] < 0.000001) delete held[t.coinName];
+        }
+        let coinVal = 0;
+        Object.keys(held).forEach(n => { coinVal += held[n] * (livePrices[coinIdMap[n]]?.usd || 0); });
+        const label = t.date ? new Date(t.date.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+        points.push({ label, value: Math.max(0, parseFloat((cash + coinVal).toFixed(2))) });
+      });
+      // Final "Now" point
+      let finalVal = 0;
+      Object.keys(held).forEach(n => { finalVal += held[n] * (livePrices[coinIdMap[n]]?.usd || 0); });
+      points.push({ label: 'Now', value: Math.max(0, parseFloat((cash + finalVal).toFixed(2))) });
+      return { labels: points.map(p => p.label), data: points.map(p => p.value) };
+    }
+
+    const nowTs = Date.now() / 1000;
+    const growthData = {
+      '24H':      buildSeries(sorted.filter(t => t.date && (nowTs - t.date.seconds) <= 86400)),
+      '7D':       buildSeries(sorted.filter(t => t.date && (nowTs - t.date.seconds) <= 7 * 86400)),
+      '1M':       buildSeries(sorted.filter(t => t.date && (nowTs - t.date.seconds) <= 30 * 86400)),
+      'All Time': buildSeries(sorted),
+    };
+
+    // Default to All Time
+    growthChart.data.labels = growthData['All Time'].labels;
+    growthChart.data.datasets[0].data = growthData['All Time'].data;
+    growthChart.update();
+    document.querySelectorAll('.growth-tf').forEach(b => b.classList.toggle('active', b.textContent.trim() === 'All Time'));
+
+    document.querySelectorAll('.growth-tf').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.growth-tf').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const tf = btn.textContent.trim();
+        growthChart.data.labels = growthData[tf].labels;
+        growthChart.data.datasets[0].data = growthData[tf].data;
+        growthChart.update();
+      });
+    });
+
+    const totalTrades   = trades.length;
+
+    // Win rate: only count SELL trades (completed positions)
+    const sellTrades    = trades.filter(t => t.type === 'sell');
+    const winningTrades = sellTrades.filter(t => (t.pnl ?? 0) > 0).length;
+    const winRate       = sellTrades.length > 0 ? Math.round((winningTrades / sellTrades.length) * 100) : 0;
+
+    document.getElementById('stat-winrate').textContent     = winRate + '%';
+    document.getElementById('stat-winrate-sub').textContent = winningTrades + ' of ' + sellTrades.length + ' sells';
+    document.getElementById('stat-trades').textContent      = totalTrades;
+    document.getElementById('stat-trades-sub').textContent  = totalTrades === 0 ? 'No trades yet' : sellTrades.length + ' sells · ' + (totalTrades - sellTrades.length) + ' buys';
+
+    // ── Allocation donut: cash (USDT) + actual current holdings ──
+    const coinColors  = { Bitcoin: '#f7931a', Ethereum: '#627eea', Solana: '#9945ff', Avalanche: '#e84142' };
+
+    // Compute net coin holdings (buys minus sells)
+    const netHoldings = {};
+    trades.forEach(t => {
+      if (!netHoldings[t.coinName]) netHoldings[t.coinName] = { coinAmount: 0, totalCost: 0 };
+      if (t.type === 'buy') {
+        netHoldings[t.coinName].coinAmount += t.coinAmount;
+        netHoldings[t.coinName].totalCost  += t.amountUSD;
+      } else {
+        netHoldings[t.coinName].coinAmount -= t.coinAmount;
+        netHoldings[t.coinName].totalCost  -= t.amountUSD;
+      }
+    });
+    Object.keys(netHoldings).forEach(k => {
+      if (netHoldings[k].coinAmount <= 0.000001) delete netHoldings[k];
+    });
+
+    // ── FIX: Compute total portfolio value = USDT cash + live value of all held coins ──
+    let coinHoldingsValue = 0;
+    Object.keys(netHoldings).forEach(name => {
+      const price = livePrices[coinIdMap[name]]?.usd || 0;
+      coinHoldingsValue += netHoldings[name].coinAmount * price;
+    });
+    const totalPortfolioValue = balance + coinHoldingsValue;
+    const totalProfit         = totalPortfolioValue - startBal;
+    const totalReturnPct      = ((totalProfit / startBal) * 100).toFixed(1);
+
+    document.getElementById('stat-value').textContent  = '$' + totalPortfolioValue.toLocaleString('en-US', { maximumFractionDigits: 2 });
+    document.getElementById('stat-return').textContent = (totalProfit >= 0 ? '▲ +' : '▼ ') + totalReturnPct + '% all time';
+    document.getElementById('stat-return').className   = 'card-sub ' + (totalProfit >= 0 ? 'up' : 'down');
+    document.getElementById('stat-profit').textContent = (totalProfit >= 0 ? '+$' : '-$') + Math.abs(totalProfit).toLocaleString('en-US', { maximumFractionDigits: 2 });
+    document.getElementById('stat-profit').className   = 'card-value ' + (totalProfit >= 0 ? 'up' : 'down');
+
+    // Fetch live prices for allocation (reuse livePrices fetched above)
+    const allocItems = [];
+    if (balance > 0.01) allocItems.push({ name: 'USDT (Cash)', value: balance, color: '#26a17b' });
+    Object.keys(netHoldings).forEach(name => {
+      const h     = netHoldings[name];
+      const price = livePrices[coinIdMap[name]]?.usd || 0;
+      const value = price ? h.coinAmount * price : h.totalCost;
+      if (value > 0.01) allocItems.push({ name, value, color: coinColors[name] || '#3A9AAA' });
+    });
+
+    const totalValue = allocItems.reduce((s, i) => s + i.value, 0);
+
+    if (allocItems.length > 0 && totalValue > 0) {
+      const allocLabels  = allocItems.map(i => i.name);
+      const allocData    = allocItems.map(i => parseFloat((i.value / totalValue * 100).toFixed(1)));
+      const allocColors2 = allocItems.map(i => i.color);
+      allocChart.data.labels = allocLabels;
+      allocChart.data.datasets[0].data = allocData;
+      allocChart.data.datasets[0].backgroundColor = allocColors2;
+      allocChart.update();
+      document.getElementById('donut-legend').innerHTML = allocItems.map((item, i) => `
+        <div class="legend-item">
+          <div class="legend-left">
+            <div class="legend-dot" style="background:${item.color}"></div>
+            <span class="legend-name">${item.name}</span>
+          </div>
+          <span class="legend-pct">${allocData[i]}%</span>
+        </div>`).join('');
+    } else {
+      allocChart.data.labels = ['USDT (Cash)'];
+      allocChart.data.datasets[0].data = [100];
+      allocChart.data.datasets[0].backgroundColor = ['#26a17b'];
+      allocChart.update();
+      document.getElementById('donut-legend').innerHTML = `
+        <div class="legend-item">
+          <div class="legend-left"><div class="legend-dot" style="background:#26a17b"></div><span class="legend-name">USDT (Cash)</span></div>
+          <span class="legend-pct">100%</span>
+        </div>`;
+    }
+
+    // Best / Worst trades
+    const coinIcons = { Bitcoin: '₿', Ethereum: 'Ξ', Solana: '◎', Avalanche: 'A' };
+    const coinBgs   = { Bitcoin: '#f7931a,#ffb347', Ethereum: '#627eea,#a8b8f8', Solana: '#9945ff,#14f195', Avalanche: '#e84142,#ff7b7b' };
+
+    function perfHTML(t) {
+      const icon = coinIcons[t.coinName] || '?';
+      const bg   = coinBgs[t.coinName]   || '#3A9AAA,#163d30';
+      const pnl  = ((t.pnl ?? 0) >= 0 ? '+$' : '-$') + Math.abs(t.pnl ?? 0).toFixed(2);
+      const pct  = ((t.pnlPct ?? 0) >= 0 ? '+' : '') + (t.pnlPct ?? 0).toFixed(1) + '%';
+      const date = t.date ? new Date(t.date.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+      return `<div class="perf-item">
+        <div class="perf-left">
+          <div class="mini-icon" style="background:linear-gradient(135deg,${bg});">${icon}</div>
+          <div><div class="perf-coin">${t.coinName}</div><div class="perf-date">${date}</div></div>
+        </div>
+        <div class="perf-right">
+          <div class="perf-pnl ${(t.pnl ?? 0) >= 0 ? 'up' : 'down'}">${pnl}</div>
+          <div class="perf-amount">${pct}</div>
+        </div>
+      </div>`;
+    }
+
+    const sortedByPnl = [...sellTrades].sort((a, b) => (b.pnl ?? 0) - (a.pnl ?? 0));
+    const best   = sortedByPnl.slice(0, 3);
+    const worst  = sortedByPnl.slice(-3).reverse();
+
+    document.getElementById('best-card').innerHTML  = '<h3>Best Trades</h3>'  + (best.length  ? best.map(perfHTML).join('')  : '<p style="opacity:0.5;padding:12px;">No trades yet</p>');
+    document.getElementById('worst-card').innerHTML = '<h3>Worst Trades</h3>' + (worst.length ? worst.map(perfHTML).join('') : '<p style="opacity:0.5;padding:12px;">No trades yet</p>');
+
+    // Paginated trade history
+    const perPage      = 5;
+    let currentPage    = 1;
+    const sortedTrades = [...trades].sort((a, b) => (b.date?.seconds ?? 0) - (a.date?.seconds ?? 0));
+    const totalPages   = Math.max(1, Math.ceil(sortedTrades.length / perPage));
+
+    function renderTrades() {
+      const start = (currentPage - 1) * perPage;
+      const slice = sortedTrades.slice(start, start + perPage);
+      document.getElementById('trade-rows').innerHTML = slice.length ? slice.map(t => {
+        const icon = coinIcons[t.coinName] || '?';
+        const bg   = coinBgs[t.coinName]   || '#3A9AAA,#163d30';
+        const pnl  = ((t.pnl ?? 0) >= 0 ? '+$' : '-$') + Math.abs(t.pnl ?? 0).toFixed(2);
+        const date = t.date ? new Date(t.date.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—';
+        return `<div class="table-row">
+          <div class="row-asset"><div class="mini-icon" style="background:linear-gradient(135deg,${bg});">${icon}</div>${t.coinName}</div>
+          <span><span class="badge ${t.type}">${t.type.toUpperCase()}</span></span>
+          <span>$${Number(t.amountUSD).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+          <span>$${Number(t.priceAtTrade).toLocaleString('en-US', { maximumFractionDigits: 2 })}</span>
+          <span class="${(t.pnl ?? 0) >= 0 ? 'up' : 'down'}">${pnl}</span>
+          <span class="date-col">${date}</span>
+        </div>`;
+      }).join('') : '<div style="padding:20px;opacity:0.5;text-align:center;">No trades yet</div>';
+
+      document.getElementById('page-indicator').textContent = currentPage + ' / ' + totalPages;
+      document.getElementById('prev-btn').disabled = currentPage === 1;
+      document.getElementById('next-btn').disabled = currentPage === totalPages;
+    }
+
+    window.changePage = function(dir) {
+      currentPage = Math.max(1, Math.min(totalPages, currentPage + dir));
+      renderTrades();
+    };
+
+    renderTrades();
+  });
+</script>
+</body>
+</html>
