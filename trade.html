@@ -304,7 +304,7 @@
   async function fetchChartData(coinId, timeframe) {
     const tf = timeframes[timeframe];
     try {
-      const res = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.coingecko.com/api/v3/coins/' + coinId + '/market_chart?vs_currency=usd&days=' + tf.days));
+      const res = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.coingecko.com/api/v3/coins/' + coinId + '/market_chart?vs_currency=usd&days=' + tf.days));
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       const prices = data.prices;
@@ -316,6 +316,7 @@
 
   async function updateChart(coinId, timeframe) {
     window._signalFetched = false;
+    window._signalDone = false;
     const c = coinConfig[coinId];
     document.getElementById('chart-title').textContent = c.name + ' (' + c.symbol + ')';
     document.getElementById('chart-sub').textContent   = c.symbol + ' / USD - ' + timeframe + ' (loading...)';
@@ -592,7 +593,7 @@
     }
   }
 
-    var API_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,avalanche-2&vs_currencies=usd&include_24hr_change=true');
+    var API_URL = 'https://corsproxy.io/?' + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,avalanche-2&vs_currencies=usd&include_24hr_change=true');
 
   async function fetchPrices() {
     try {
@@ -617,7 +618,8 @@
         if (inputVal) calcCoin();
       }
       // Trigger AI signal once prices are loaded (if not already fetching)
-      if (!window._signalFetched && window._getAISignal && d[activeCoinId]) {
+      if (!window._signalFetched && !window._signalDone && window._getAISignal && d[activeCoinId]) {
+        window._signalDone = true;
         window._signalFetched = true;
         var _c      = coinConfig[activeCoinId];
         var _price  = d[activeCoinId].usd;
