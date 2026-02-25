@@ -1,10 +1,10 @@
 // ── OPENGRADIENT x402 SIGNAL ENGINE ──
-const OG_ENDPOINT = 'https://llmogevm.opengradient.ai/v1/chat/completions';
+// Routes through Cloudflare Worker to bypass CORS
+const OG_ENDPOINT = 'https://spring-thunder-53b1.nsomiari.workers.dev';
 const OG_CONTRACT = '0x240b09731D96979f50B2C649C9CE10FcF9C7987F';
 const OG_PAY_TO   = '0x339c7de83d1a62edafbaac186382ee76584d294f';
 const OG_CHAIN_ID = 84532;
 
-// ── SWITCH RABBY TO BASE SEPOLIA ──
 async function ensureBaseSepoliaNetwork() {
   await window.ethereum.request({
     method: 'wallet_switchEthereumChain',
@@ -25,7 +25,6 @@ async function ensureBaseSepoliaNetwork() {
   });
 }
 
-// ── BUILD THE PROMPT ──
 function buildPrompt(coinName, symbol, price, change24h, timeframe) {
   return `You are a professional crypto trading signal AI. Analyze the following market data and return a trading signal.
 
@@ -42,7 +41,6 @@ Based on this data, respond ONLY with a JSON object in this exact format, no oth
 }`;
 }
 
-// ── MAIN SIGNAL FETCHER ──
 export async function getAISignal(coinName, symbol, price, change24h, timeframe) {
   if (!window.ethereum) {
     console.warn('[OG] No wallet detected');
@@ -69,30 +67,28 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
       temperature: 0.3,
     };
 
-    console.log('[OG] Step 3 — Initial request to OpenGradient...');
+    console.log('[OG] Step 3 — Initial request via Cloudflare Worker...');
     const initRes = await fetch(OG_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody),
     });
 
-    console.log('[OG] Step 3 — Response status:', initRes.status);
+    console.log('[OG] Step 3 — Status:', initRes.status);
 
     if (initRes.status !== 402) {
-      console.log('[OG] Step 3 — No payment required, parsing response...');
       const data = await initRes.json();
       return parseSignal(data);
     }
 
     console.log('[OG] Step 4 — Got 402, reading payment header...');
     const paymentHeader = initRes.headers.get('X-PAYMENT-REQUIRED');
-    console.log('[OG] Step 4 — Payment header:', paymentHeader ? 'received' : 'MISSING');
-
-    if (!paymentHeader) throw new Error('No X-PAYMENT-REQUIRED header in 402 response');
+    console.log('[OG] Step 4 — Header:', paymentHeader ? 'received' : 'MISSING');
+    if (!paymentHeader) throw new Error('No X-PAYMENT-REQUIRED header');
 
     const paymentReqs = JSON.parse(atob(paymentHeader));
     const amount      = paymentReqs.maxAmountRequired || '1000000';
-    console.log('[OG] Step 4 — Payment amount required:', amount);
+    console.log('[OG] Step 4 — Amount:', amount);
 
     const nonce       = '0x' + Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('');
     const validBefore = Math.floor(Date.now() / 1000) + 300;
@@ -129,7 +125,7 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
       method: 'eth_signTypedData_v4',
       params: [userAddress, JSON.stringify({ domain, types, primaryType: 'TransferWithAuthorization', message: authorization })],
     });
-    console.log('[OG] Step 5 — Signature received:', signature.slice(0, 20) + '...');
+    console.log('[OG] Step 5 — Signed!');
 
     const paymentPayload = btoa(JSON.stringify({
       payload: { signature, authorization }
@@ -145,31 +141,29 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
       body: JSON.stringify(requestBody),
     });
 
-    console.log('[OG] Step 6 — Paid response status:', paidRes.status);
+    console.log('[OG] Step 6 — Paid status:', paidRes.status);
 
     if (!paidRes.ok) {
       const errBody = await paidRes.json();
-      console.error('[OG] Step 6 — Error body:', errBody);
       throw new Error(errBody.error?.message || 'Payment failed');
     }
 
     const data = await paidRes.json();
-    console.log('[OG] Step 6 — Success! Parsing signal...');
+    console.log('[OG] Done!');
     return parseSignal(data);
 
   } catch (err) {
-    console.error('[OG] FAILED at:', err.message, err);
+    console.error('[OG] FAILED:', err.message);
     return null;
   }
 }
 
-// ── PARSE THE AI RESPONSE ──
 function parseSignal(data) {
   try {
     const text   = data.choices[0].message.content.trim();
     const clean  = text.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
-    console.log('[OG] Parsed signal:', parsed);
+    console.log('[OG] Signal:', parsed);
     return {
       signal:     parsed.signal     || 'Hold',
       confidence: parsed.confidence || 70,
@@ -177,7 +171,7 @@ function parseSignal(data) {
       signalType: getSignalType(parsed.signal),
     };
   } catch (e) {
-    console.warn('[OG] Could not parse signal:', e);
+    console.warn('[OG] Parse failed:', e);
     return null;
   }
 }
