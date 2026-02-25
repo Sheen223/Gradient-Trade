@@ -302,10 +302,16 @@
     document.getElementById('wins-sub').textContent = winRate + '% win rate · ' + wins + 'W / ' + losses + 'L';
 
     // Initial render with cash only (before prices load)
+    const _cashPnl    = cashBalance - startBal;
+    const _cashRetPct = ((_cashPnl / startBal) * 100).toFixed(1);
     document.getElementById('portfolio-value').textContent =
       '$' + cashBalance.toLocaleString('en-US', { minimumFractionDigits: 2 });
+    document.getElementById('portfolio-sub').textContent =
+      (_cashPnl >= 0 ? '▲ +$' : '▼ -$') + Math.abs(_cashPnl).toLocaleString('en-US', { minimumFractionDigits: 2 }) +
+      ' (' + (_cashPnl >= 0 ? '+' : '') + _cashRetPct + '%) all time';
+    document.getElementById('portfolio-sub').className = 'card-sub ' + (_cashPnl >= 0 ? 'up' : 'down');
     document.getElementById('daily-pnl').textContent  = '—';
-    document.getElementById('daily-sub').textContent  = 'Loading positions...';
+    document.getElementById('daily-sub').textContent  = 'Calculating positions...';
 
     // Load trades + compute holdings
     const trades   = await getUserTrades(user?.uid || null);
@@ -394,7 +400,7 @@
   async function fetchChartData(coinId, timeframe) {
     const tf = timeframes[timeframe];
     try {
-      const res = await fetch(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${tf.days}`);
+      const res = await fetch('https://corsproxy.io/?' + encodeURIComponent(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${tf.days}`));
       if (!res.ok) throw new Error('Failed');
       const data    = await res.json();
       const prices  = data.prices;
@@ -460,7 +466,7 @@
     if (changeEl) { changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%'; changeEl.className = 'price-chg ' + (change >= 0 ? 'up' : 'down'); }
   }
 
-  const API_URL = 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,avalanche-2&vs_currencies=usd&include_24hr_change=true';
+  const API_URL = 'https://corsproxy.io/?' + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,avalanche-2&vs_currencies=usd&include_24hr_change=true');
 
   async function fetchPrices() {
     try {
