@@ -1,5 +1,4 @@
 // ── OPENGRADIENT x402 SIGNAL ENGINE ──
-// Routes through Cloudflare Worker to bypass CORS
 const OG_ENDPOINT = 'https://spring-thunder-53b1.nsomiari.workers.dev';
 const OG_CONTRACT = '0x240b09731D96979f50B2C649C9CE10FcF9C7987F';
 const OG_PAY_TO   = '0x339c7de83d1a62edafbaac186382ee76584d294f';
@@ -76,15 +75,35 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
 
     console.log('[OG] Step 3 — Status:', initRes.status);
 
+    // Log ALL headers for debugging
+    const debugHeaders = initRes.headers.get('X-Debug-Headers');
+    console.log('[OG] Step 3 — All OG headers:', debugHeaders);
+
     if (initRes.status !== 402) {
       const data = await initRes.json();
       return parseSignal(data);
     }
 
     console.log('[OG] Step 4 — Got 402, reading payment header...');
-    const paymentHeader = initRes.headers.get('X-PAYMENT-REQUIRED');
-    console.log('[OG] Step 4 — Header:', paymentHeader ? 'received' : 'MISSING');
-    if (!paymentHeader) throw new Error('No X-PAYMENT-REQUIRED header');
+
+    // Try multiple header name variants
+    let paymentHeader = initRes.headers.get('X-PAYMENT-REQUIRED')
+                     || initRes.headers.get('x-payment-required')
+                     || initRes.headers.get('X-Payment-Required');
+
+    // Also try to extract from debug headers if direct access fails
+    if (!paymentHeader && debugHeaders) {
+      try {
+        const parsed = JSON.parse(debugHeaders);
+        paymentHeader = parsed['x-payment-required']
+                     || parsed['X-PAYMENT-REQUIRED']
+                     || parsed['X-Payment-Required'];
+        if (paymentHeader) console.log('[OG] Step 4 — Header found in debug:', paymentHeader.slice(0, 30) + '...');
+      } catch(e) {}
+    }
+
+    console.log('[OG] Step 4 — Header:', paymentHeader ? 'received ✅' : 'MISSING ❌');
+    if (!paymentHeader) throw new Error('No X-PAYMENT-REQUIRED header in 402 response');
 
     const paymentReqs = JSON.parse(atob(paymentHeader));
     const amount      = paymentReqs.maxAmountRequired || '1000000';
@@ -141,7 +160,7 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
       body: JSON.stringify(requestBody),
     });
 
-    console.log('[OG] Step 6 — Paid status:', paidRes.status);
+    console.log('[OG] Step 6 — Status:', paidRes.status);
 
     if (!paidRes.ok) {
       const errBody = await paidRes.json();
