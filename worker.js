@@ -1,13 +1,12 @@
 export default {
   async fetch(request) {
-    // Allow CORS preflight
     if (request.method === 'OPTIONS') {
       return new Response(null, {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type, X-PAYMENT, X-PAYMENT-REQUIRED',
-          'Access-Control-Expose-Headers': 'X-PAYMENT-REQUIRED, X-PAYMENT-RESPONSE',
+          'Access-Control-Expose-Headers': 'X-PAYMENT-REQUIRED, X-PAYMENT-RESPONSE, X-Debug-Headers',
         }
       });
     }
@@ -20,29 +19,31 @@ export default {
 
     const body = await request.text();
 
-    const ogRes = await fetch(OG_URL, {
-      method: 'POST',
-      headers,
-      body,
-    });
+    const ogRes = await fetch(OG_URL, { method: 'POST', headers, body });
 
-    // Read the body and ALL headers including X-PAYMENT-REQUIRED
     const resBody = await ogRes.text();
-    
-    // Build response with explicit CORS + payment headers
+
+    // Collect ALL headers OpenGradient sent back for debugging
+    const allHeaders = {};
+    ogRes.headers.forEach((value, key) => { allHeaders[key] = value; });
+
     const responseHeaders = {
-      'Content-Type': ogRes.headers.get('Content-Type') || 'application/json',
+      'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, X-PAYMENT, X-PAYMENT-REQUIRED',
-      'Access-Control-Expose-Headers': 'X-PAYMENT-REQUIRED, X-PAYMENT-RESPONSE',
+      'Access-Control-Expose-Headers': 'X-PAYMENT-REQUIRED, X-PAYMENT-RESPONSE, X-Debug-Headers',
+      'X-Debug-Headers': JSON.stringify(allHeaders),
     };
 
-    // Explicitly forward payment headers
-    const paymentRequired = ogRes.headers.get('X-PAYMENT-REQUIRED');
-    const paymentResponse  = ogRes.headers.get('X-PAYMENT-RESPONSE');
-    if (paymentRequired) responseHeaders['X-PAYMENT-REQUIRED'] = paymentRequired;
-    if (paymentResponse)  responseHeaders['X-PAYMENT-RESPONSE']  = paymentResponse;
+    // Forward payment headers under multiple possible casings
+    const headerVariants = [
+      'X-PAYMENT-REQUIRED', 'x-payment-required', 'X-Payment-Required',
+      'X-PAYMENT-RESPONSE', 'x-payment-response', 'X-Payment-Response',
+      'www-authenticate', 'WWW-Authenticate',
+    ];
+    headerVariants.forEach(h => {
+      const val = ogRes.headers.get(h);
+      if (val) responseHeaders[h] = val;
+    });
 
     return new Response(resBody, {
       status: ogRes.status,
