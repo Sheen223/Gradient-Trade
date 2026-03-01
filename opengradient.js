@@ -1,7 +1,5 @@
 // ── OPENGRADIENT x402 SIGNAL ENGINE ──
 const OG_ENDPOINT = 'https://spring-thunder-53b1.nsomiari.workers.dev';
-const OG_CONTRACT = '0x240b09731D96979f50B2C649C9CE10FcF9C7987F';
-const OG_PAY_TO   = '0x339c7de83d1a62edafbaac186382ee76584d294f';
 const OG_CHAIN_ID = 84532;
 
 async function ensureBaseSepoliaNetwork() {
@@ -80,35 +78,27 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
       return parseSignal(data);
     }
 
-    // Read the 402 body — payment info is in there
-    const body402 = await initRes.json();
-    console.log('[OG] Step 4 — 402 body:', JSON.stringify(body402));
+    // Read payment requirements from 402 body
+    const body402  = await initRes.json();
+    const accepts  = body402.accepts || [];
+    const payOpt   = accepts[0] || {};
 
-    // Extract payment requirements from body
-    const paymentInfo = body402.x402Version !== undefined ? body402
-                      : body402.payment_required
-                      || body402.paymentRequired  
-                      || body402.error
-                      || body402;
+    const amount       = payOpt.maxAmountRequired || '100000';
+    const payTo        = payOpt.payTo;
+    const tokenAddress = payOpt.asset;
+    const resource     = payOpt.resource || OG_ENDPOINT;
 
-    console.log('[OG] Step 4 — Payment info:', JSON.stringify(paymentInfo));
-
-    // Get the amount needed
-    const accepts = paymentInfo.accepts || paymentInfo.payment?.accepts || [];
-    const payOption = accepts[0] || {};
-    const amount = payOption.maxAmountRequired || payOption.amount || '1000000';
-    const payTo  = payOption.payTo || OG_PAY_TO;
-
-    console.log('[OG] Step 4 — Amount:', amount, 'PayTo:', payTo);
+    console.log('[OG] Step 4 — Amount:', amount, '| PayTo:', payTo, '| Token:', tokenAddress);
 
     const nonce       = '0x' + Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('');
+    const validAfter  = 0;
     const validBefore = Math.floor(Date.now() / 1000) + 300;
 
     const domain = {
-      name: 'OPG',
-      version: '1',
+      name: 'USD Coin',
+      version: '2',
       chainId: OG_CHAIN_ID,
-      verifyingContract: OG_CONTRACT,
+      verifyingContract: tokenAddress,
     };
 
     const types = {
@@ -122,11 +112,11 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
       ]
     };
 
-    const authorization = {
+    const message = {
       from:        userAddress,
       to:          payTo,
       value:       amount,
-      validAfter:  0,
+      validAfter:  validAfter,
       validBefore: validBefore,
       nonce:       nonce,
     };
@@ -134,12 +124,26 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
     console.log('[OG] Step 5 — Requesting EIP-712 signature from Rabby...');
     const signature = await window.ethereum.request({
       method: 'eth_signTypedData_v4',
-      params: [userAddress, JSON.stringify({ domain, types, primaryType: 'TransferWithAuthorization', message: authorization })],
+      params: [userAddress, JSON.stringify({ domain, types, primaryType: 'TransferWithAuthorization', message })],
     });
     console.log('[OG] Step 5 — Signed!');
 
-    const paymentPayload = btoa(JSON.stringify({
-      payload: { signature, authorization }
+    // Build x402 payment header exactly as spec requires
+    const paymentHeader = btoa(JSON.stringify({
+      x402Version: 1,
+      scheme: 'exact',
+      network: 'og-evm',
+      payload: {
+        signature,
+        authorization: {
+          from:        userAddress,
+          to:          payTo,
+          value:       amount,
+          validAfter:  String(validAfter),
+          validBefore: String(validBefore),
+          nonce,
+        }
+      }
     }));
 
     console.log('[OG] Step 6 — Submitting paid request...');
@@ -147,22 +151,21 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-PAYMENT': paymentPayload,
+        'X-PAYMENT': paymentHeader,
       },
       body: JSON.stringify(requestBody),
     });
 
     console.log('[OG] Step 6 — Status:', paidRes.status);
+    const paidBody = await paidRes.json();
+    console.log('[OG] Step 6 — Body:', JSON.stringify(paidBody).slice(0, 200));
 
     if (!paidRes.ok) {
-      const errBody = await paidRes.json();
-      console.error('[OG] Step 6 error:', errBody);
-      throw new Error(errBody.error?.message || 'Payment failed');
+      throw new Error(paidBody.error?.message || paidBody.error || 'Payment failed');
     }
 
-    const data = await paidRes.json();
     console.log('[OG] Done!');
-    return parseSignal(data);
+    return parseSignal(paidBody);
 
   } catch (err) {
     console.error('[OG] FAILED:', err.message);
