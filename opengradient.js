@@ -1,6 +1,7 @@
 // ── OPENGRADIENT x402 SIGNAL ENGINE ──
 const OG_ENDPOINT = 'https://spring-thunder-53b1.nsomiari.workers.dev';
 const OG_CHAIN_ID = 84532;
+const OPG_TOKEN   = '0x240b09731D96979f50B2C649C9CE10FcF9C7987F'; // $OPG on Base Sepolia
 
 async function ensureBaseSepoliaNetwork() {
   await window.ethereum.request({
@@ -80,24 +81,28 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
 
     // Read payment requirements from 402 body
     const body402  = await initRes.json();
+    console.log('[OG] Step 4 — 402 body:', JSON.stringify(body402).slice(0, 300));
+
     const accepts  = body402.accepts || [];
     const payOpt   = accepts[0] || {};
 
     const amount       = payOpt.maxAmountRequired || '100000';
     const payTo        = payOpt.payTo;
-    const tokenAddress = payOpt.asset;
-    const resource     = payOpt.resource || OG_ENDPOINT;
+    const tokenAddress = payOpt.asset || OPG_TOKEN;
+    const tokenName    = (payOpt.extra && payOpt.extra.name)    || 'OPG';
+    const tokenVersion = (payOpt.extra && payOpt.extra.version) || '1';
+    const network      = payOpt.network || 'eip155:84532';
 
-    console.log('[OG] Step 4 — Amount:', amount, '| PayTo:', payTo, '| Token:', tokenAddress);
+    console.log('[OG] Step 4 — Token:', tokenName, '| Amount:', amount, '| Network:', network);
 
     const nonce       = '0x' + Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('');
-    const validAfter  = 0;
-    const validBefore = Math.floor(Date.now() / 1000) + 300;
+    const validAfter  = '0';
+    const validBefore = String(Math.floor(Date.now() / 1000) + 300);
 
     const domain = {
-      name: 'USD Coin',
-      version: '2',
-      chainId: OG_CHAIN_ID,
+      name:              tokenName,
+      version:           tokenVersion,
+      chainId:           OG_CHAIN_ID,
       verifyingContract: tokenAddress,
     };
 
@@ -128,20 +133,19 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
     });
     console.log('[OG] Step 5 — Signed!');
 
-    // Build x402 payment header exactly as spec requires
     const paymentHeader = btoa(JSON.stringify({
       x402Version: 1,
-      scheme: 'exact',
-      network: 'og-evm',
+      scheme:      'exact',
+      network:     network,
       payload: {
         signature,
         authorization: {
           from:        userAddress,
           to:          payTo,
           value:       amount,
-          validAfter:  String(validAfter),
-          validBefore: String(validBefore),
-          nonce,
+          validAfter:  validAfter,
+          validBefore: validBefore,
+          nonce:       nonce,
         }
       }
     }));
@@ -158,10 +162,10 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
 
     console.log('[OG] Step 6 — Status:', paidRes.status);
     const paidBody = await paidRes.json();
-    console.log('[OG] Step 6 — Body:', JSON.stringify(paidBody).slice(0, 200));
+    console.log('[OG] Step 6 — Body:', JSON.stringify(paidBody).slice(0, 300));
 
     if (!paidRes.ok) {
-      throw new Error(paidBody.error?.message || paidBody.error || 'Payment failed');
+      throw new Error(paidBody.error?.message || paidBody.error || JSON.stringify(paidBody));
     }
 
     console.log('[OG] Done!');
