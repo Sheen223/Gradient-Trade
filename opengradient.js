@@ -75,39 +75,31 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
 
     console.log('[OG] Step 3 — Status:', initRes.status);
 
-    // Log ALL headers for debugging
-    const debugHeaders = initRes.headers.get('X-Debug-Headers');
-    console.log('[OG] Step 3 — All OG headers:', debugHeaders);
-
     if (initRes.status !== 402) {
       const data = await initRes.json();
       return parseSignal(data);
     }
 
-    console.log('[OG] Step 4 — Got 402, reading payment header...');
+    // Read the 402 body — payment info is in there
+    const body402 = await initRes.json();
+    console.log('[OG] Step 4 — 402 body:', JSON.stringify(body402));
 
-    // Try multiple header name variants
-    let paymentHeader = initRes.headers.get('X-PAYMENT-REQUIRED')
-                     || initRes.headers.get('x-payment-required')
-                     || initRes.headers.get('X-Payment-Required');
+    // Extract payment requirements from body
+    const paymentInfo = body402.x402Version !== undefined ? body402
+                      : body402.payment_required
+                      || body402.paymentRequired  
+                      || body402.error
+                      || body402;
 
-    // Also try to extract from debug headers if direct access fails
-    if (!paymentHeader && debugHeaders) {
-      try {
-        const parsed = JSON.parse(debugHeaders);
-        paymentHeader = parsed['x-payment-required']
-                     || parsed['X-PAYMENT-REQUIRED']
-                     || parsed['X-Payment-Required'];
-        if (paymentHeader) console.log('[OG] Step 4 — Header found in debug:', paymentHeader.slice(0, 30) + '...');
-      } catch(e) {}
-    }
+    console.log('[OG] Step 4 — Payment info:', JSON.stringify(paymentInfo));
 
-    console.log('[OG] Step 4 — Header:', paymentHeader ? 'received ✅' : 'MISSING ❌');
-    if (!paymentHeader) throw new Error('No X-PAYMENT-REQUIRED header in 402 response');
+    // Get the amount needed
+    const accepts = paymentInfo.accepts || paymentInfo.payment?.accepts || [];
+    const payOption = accepts[0] || {};
+    const amount = payOption.maxAmountRequired || payOption.amount || '1000000';
+    const payTo  = payOption.payTo || OG_PAY_TO;
 
-    const paymentReqs = JSON.parse(atob(paymentHeader));
-    const amount      = paymentReqs.maxAmountRequired || '1000000';
-    console.log('[OG] Step 4 — Amount:', amount);
+    console.log('[OG] Step 4 — Amount:', amount, 'PayTo:', payTo);
 
     const nonce       = '0x' + Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('');
     const validBefore = Math.floor(Date.now() / 1000) + 300;
@@ -132,7 +124,7 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
 
     const authorization = {
       from:        userAddress,
-      to:          OG_PAY_TO,
+      to:          payTo,
       value:       amount,
       validAfter:  0,
       validBefore: validBefore,
@@ -164,6 +156,7 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
 
     if (!paidRes.ok) {
       const errBody = await paidRes.json();
+      console.error('[OG] Step 6 error:', errBody);
       throw new Error(errBody.error?.message || 'Payment failed');
     }
 
