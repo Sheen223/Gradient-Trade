@@ -5,49 +5,45 @@ export default {
         headers: {
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, X-PAYMENT, X-PAYMENT-REQUIRED',
-          'Access-Control-Expose-Headers': 'X-PAYMENT-REQUIRED, X-PAYMENT-RESPONSE, X-Debug-Headers',
+          'Access-Control-Allow-Headers': 'Content-Type, X-PAYMENT, X-SETTLEMENT-TYPE',
+          'Access-Control-Expose-Headers': 'X-PAYMENT-REQUIRED, X-PAYMENT-RESPONSE',
         }
       });
     }
 
-    const OG_URL = 'https://llmogevm.opengradient.ai/v1/chat/completions';
+    const OG_URL = 'https://llm.opengradient.ai/v1/chat/completions';
 
-    const headers = { 'Content-Type': 'application/json' };
+    const reqHeaders = { 'Content-Type': 'application/json' };
     const xpayment = request.headers.get('X-PAYMENT');
-    if (xpayment) headers['X-PAYMENT'] = xpayment;
+    if (xpayment) reqHeaders['X-PAYMENT'] = xpayment;
 
     const body = await request.text();
 
-    const ogRes = await fetch(OG_URL, { method: 'POST', headers, body });
+    const ogRes = await fetch(OG_URL, {
+      method: 'POST',
+      headers: reqHeaders,
+      body,
+    });
 
     const resBody = await ogRes.text();
 
-    // Collect ALL headers OpenGradient sent back for debugging
-    const allHeaders = {};
-    ogRes.headers.forEach((value, key) => { allHeaders[key] = value; });
-
-    const responseHeaders = {
-      'Content-Type': 'application/json',
+    // Build response headers explicitly
+    const resHeaders = {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Expose-Headers': 'X-PAYMENT-REQUIRED, X-PAYMENT-RESPONSE, X-Debug-Headers',
-      'X-Debug-Headers': JSON.stringify(allHeaders),
+      'Access-Control-Expose-Headers': 'X-PAYMENT-REQUIRED, X-PAYMENT-RESPONSE',
+      'Content-Type': ogRes.headers.get('Content-Type') || 'application/json',
     };
 
-    // Forward payment headers under multiple possible casings
-    const headerVariants = [
-      'X-PAYMENT-REQUIRED', 'x-payment-required', 'X-Payment-Required',
-      'X-PAYMENT-RESPONSE', 'x-payment-response', 'X-Payment-Response',
-      'www-authenticate', 'WWW-Authenticate',
-    ];
-    headerVariants.forEach(h => {
-      const val = ogRes.headers.get(h);
-      if (val) responseHeaders[h] = val;
-    });
+    // Forward payment headers
+    const xPayReq = ogRes.headers.get('X-PAYMENT-REQUIRED') || ogRes.headers.get('x-payment-required');
+    const xPayRes = ogRes.headers.get('X-PAYMENT-RESPONSE') || ogRes.headers.get('x-payment-response');
+    if (xPayReq) resHeaders['X-PAYMENT-REQUIRED'] = xPayReq;
+    if (xPayRes) resHeaders['X-PAYMENT-RESPONSE']  = xPayRes;
 
     return new Response(resBody, {
       status: ogRes.status,
-      headers: responseHeaders,
+      headers: resHeaders,
     });
   }
 };
+
