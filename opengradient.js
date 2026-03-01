@@ -1,7 +1,8 @@
 // ── OPENGRADIENT x402 SIGNAL ENGINE ──
-const OG_ENDPOINT = 'https://spring-thunder-53b1.nsomiari.workers.dev';
-const OG_CHAIN_ID = 84532;
-const OPG_TOKEN   = '0x240b09731D96979f50B2C649C9CE10FcF9C7987F'; // $OPG on Base Sepolia
+const OG_ENDPOINT  = 'https://spring-thunder-53b1.nsomiari.workers.dev';
+const OG_CHAIN_ID  = 84532;
+const OPG_TOKEN    = '0x240b09731D96979f50B2C649C9CE10FcF9C7987F';
+const OPG_PAY_TO   = '0x339c7de83d1a62edafbaac186382ee76584d294f';
 
 async function ensureBaseSepoliaNetwork() {
   await window.ethereum.request({
@@ -79,31 +80,37 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
       return parseSignal(data);
     }
 
-    // Read payment requirements from 402 body
-    const body402  = await initRes.json();
-    console.log('[OG] Step 4 — 402 body:', JSON.stringify(body402).slice(0, 300));
+    // Read payment requirements — from header first, then body
+    let paymentReqs = null;
+    const paymentHeader = initRes.headers.get('X-PAYMENT-REQUIRED');
+    if (paymentHeader) {
+      paymentReqs = JSON.parse(atob(paymentHeader));
+      console.log('[OG] Step 4 — Got payment reqs from header');
+    } else {
+      const body402 = await initRes.json();
+      console.log('[OG] Step 4 — 402 body:', JSON.stringify(body402).slice(0, 200));
+      const accepts = body402.accepts || [];
+      paymentReqs = accepts[0] || {};
+    }
 
-    const accepts  = body402.accepts || [];
-    const payOpt   = accepts[0] || {};
+    console.log('[OG] Step 4 — Payment reqs:', JSON.stringify(paymentReqs).slice(0, 200));
 
-    const amount       = payOpt.maxAmountRequired || '100000';
-    const payTo        = payOpt.payTo;
-    const tokenAddress = payOpt.asset || OPG_TOKEN;
-    const tokenName    = (payOpt.extra && payOpt.extra.name)    || 'OPG';
-    const tokenVersion = (payOpt.extra && payOpt.extra.version) || '1';
-    const network      = payOpt.network || 'eip155:84532';
+    const amount  = paymentReqs.maxAmountRequired || '1000000';
+    const payTo   = paymentReqs.payTo   || OPG_PAY_TO;
+    const asset   = paymentReqs.asset   || OPG_TOKEN;
 
-    console.log('[OG] Step 4 — Token:', tokenName, '| Amount:', amount, '| Network:', network);
+    console.log('[OG] Step 4 — Amount:', amount, '| PayTo:', payTo);
 
     const nonce       = '0x' + Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('');
-    const validAfter  = '0';
-    const validBefore = String(Math.floor(Date.now() / 1000) + 300);
+    const validAfter  = 0;
+    const validBefore = Math.floor(Date.now() / 1000) + 300;
 
+    // EIP-712 domain — exactly as per docs
     const domain = {
-      name:              tokenName,
-      version:           tokenVersion,
+      name:              'OPG',
+      version:           '1',
       chainId:           OG_CHAIN_ID,
-      verifyingContract: tokenAddress,
+      verifyingContract: asset,
     };
 
     const types = {
@@ -133,10 +140,8 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
     });
     console.log('[OG] Step 5 — Signed!');
 
-    const paymentHeader = btoa(JSON.stringify({
-      x402Version: 1,
-      scheme:      'exact',
-      network:     network,
+    // X-PAYMENT format — exactly as per docs: just payload with signature + authorization
+    const xPayment = btoa(JSON.stringify({
       payload: {
         signature,
         authorization: {
@@ -155,7 +160,7 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-PAYMENT': paymentHeader,
+        'X-PAYMENT': xPayment,
       },
       body: JSON.stringify(requestBody),
     });
@@ -165,7 +170,7 @@ export async function getAISignal(coinName, symbol, price, change24h, timeframe)
     console.log('[OG] Step 6 — Body:', JSON.stringify(paidBody).slice(0, 300));
 
     if (!paidRes.ok) {
-      throw new Error(paidBody.error?.message || paidBody.error || JSON.stringify(paidBody));
+      throw new Error(paidBody.error?.message || JSON.stringify(paidBody));
     }
 
     console.log('[OG] Done!');
